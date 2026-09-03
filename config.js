@@ -8,7 +8,7 @@ window.APP_CONFIG = {
 
   // 2) anon public key  (Project Settings > API > anon public)
   //    ⬇️ ยังขาดค่านี้ค่าเดียว — วาง key ที่ขึ้นต้นด้วย eyJ ระหว่างเครื่องหมาย " "
-  SUPABASE_ANON_KEY: "",
+  SUPABASE_ANON_KEY: "sb_publishable_JlBoZAHo30uswBpaVBKX0A_v16Ijzw9",
 
   // 3) รหัสผ่านเข้าใช้งานโปรแกรม
   ACCESS_CODE: "044357246",
