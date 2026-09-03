@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>โปรแกรมคุมเงินนอกงบประมาณ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💰</text></svg>">
+</head>
+<body>
+
+  <!-- ============ หน้าล็อกอิน ============ -->
+  <div id="loginScreen">
+    <div class="login-card">
+      <div class="logo">💰</div>
+      <h2>คุมเงินนอกงบประมาณ</h2>
+      <p>กรอกรหัสผ่านเพื่อเข้าใช้งาน</p>
+      <input id="codeInput" type="password" inputmode="numeric" placeholder="••••••" autocomplete="off">
+      <div class="login-err" id="loginErr"></div>
+      <button class="btn primary" id="loginBtn" style="width:100%;justify-content:center">เข้าสู่ระบบ</button>
+    </div>
+  </div>
+
+  <!-- ============ แอปหลัก ============ -->
+  <div id="app">
+    <div class="layout">
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="mark">💰</div>
+          <div><b>คุมเงินนอกงบ</b><br><span>ระบบทะเบียนการเงิน</span></div>
+        </div>
+        <div id="nav"></div>
+        <div class="foot">
+          <div>เวอร์ชัน 1.0</div>
+          <button id="reloadBtn">🔄 โหลดข้อมูลใหม่</button>
+          <button id="logoutBtn">🔒 ออกจากระบบ</button>
+        </div>
+      </aside>
+
+      <!-- Main -->
+      <main class="main">
+        <div class="topbar no-print">
+          <div class="title">
+            <h1 id="pageTitle">—</h1>
+            <p id="pageSub"></p>
+          </div>
+          <div class="badge-year" id="yearBadge">ปีงบประมาณ —</div>
+        </div>
+
+        <div class="warn-banner" id="configBanner" style="display:none">
+          ⚠️ <b>ยังไม่ได้เชื่อมต่อฐานข้อมูล</b> — เปิดไฟล์ <code>config.js</code> แล้วใส่ค่า
+          <code>SUPABASE_URL</code> และ <code>SUPABASE_ANON_KEY</code>
+          (ดูวิธีในไฟล์ <b>README-setup-TH.md</b>) จากนั้นรีเฟรชหน้านี้
+        </div>
+
+        <div id="view"></div>
+      </main>
+    </div>
+  </div>
+
+  <!-- ============ โมดัล ============ -->
+  <div class="modal-back" id="modalBack">
+    <div class="modal" id="modalBox">
+      <div class="mhead">
+        <h3 id="modalTitle">—</h3>
+        <button class="close-x" id="modalClose">✕</button>
+      </div>
+      <div class="mbody" id="modalBody"></div>
+      <div class="mfoot" id="modalFoot"></div>
+    </div>
+  </div>
+
+  <!-- ============ Toast ============ -->
+  <div id="toast"></div>
+
+  <!-- ============ ไลบรารีภายนอก (CDN) ============ -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+  <!-- ============ โค้ดของแอป ============ -->
+  <script src="config.js"></script>
+  <script src="js/util.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/export.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/pages/settings.js"></script>
+  <script src="js/pages/dashboard.js"></script>
+  <script src="js/pages/daily.js"></script>
+  <script src="js/pages/reg-vouchers.js"></script>
+  <script src="js/pages/reg-orders.js"></script>
+  <script src="js/pages/reg-offbudget.js"></script>
+</body>
+</html>

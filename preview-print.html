@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ตัวอย่างการพิมพ์ A4 (PDF)</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{ --sheetfont:'Sarabun','TH Sarabun New',Tahoma,sans-serif; }
+  *{box-sizing:border-box}
+  body{margin:0;background:#e8ebf2;font-family:var(--sheetfont);color:#111}
+  .bar{background:#141a2e;color:#fff;padding:12px 20px;font-size:15px;position:sticky;top:0;z-index:5;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+  .bar b{font-size:16px}
+  .bar button{background:#f08c00;color:#fff;border:0;padding:8px 16px;border-radius:8px;font-size:14px;cursor:pointer;font-family:inherit}
+  .bar span{color:#9fb0d8;font-size:13px}
+  .wrap{padding:22px;display:flex;flex-direction:column;align-items:center;gap:22px}
+
+  /* กระดาษ A4 แนวนอน (297 x 210 mm) */
+  .sheet{background:#fff;width:297mm;min-height:210mm;padding:12mm 12mm;box-shadow:0 6px 24px rgba(0,0,0,.18)}
+  .doc-head{text-align:center;position:relative;margin-bottom:10px}
+  .doc-head .fy{position:absolute;right:0;top:0;font-size:15px}
+  .doc-head .t1{font-size:19px;font-weight:700}
+  .doc-head .t2{font-size:17px;font-weight:700}
+  .doc-head .t3{font-size:15px}
+  table.reg{width:100%;border-collapse:collapse;font-size:14px}
+  table.reg th,table.reg td{border:1px solid #000;padding:3px 6px;vertical-align:top}
+  table.reg th{text-align:center;font-weight:700;background:#eee}
+  table.reg td.num{text-align:right;font-variant-numeric:tabular-nums}
+  table.reg td.c{text-align:center}
+  table.reg tr.sum td{font-weight:700;background:#fafafa}
+  .sign-row{display:flex;justify-content:space-around;margin-top:40px;font-size:15px;text-align:center}
+  .tag{display:inline-block;font-size:11px;background:#e7ecff;color:#2f49b0;padding:2px 10px;border-radius:20px;margin-bottom:6px}
+
+  @page{size:A4 landscape;margin:8mm}
+  @media print{
+    body{background:#fff}
+    .bar{display:none}
+    .wrap{padding:0;gap:0}
+    .sheet{width:auto;min-height:auto;box-shadow:none;padding:0}
+    .page-break{page-break-after:always}
+    table.reg th{background:#eee!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  }
+</style>
+</head>
+<body>
+<div class="bar">
+  <b>🖨️ ตัวอย่างการพิมพ์ A4 → PDF</b>
+  <button onclick="window.print()">พิมพ์ / Save as PDF</button>
+  <span>เมื่อพิมพ์ ให้เลือก A4 · แนวนอน (Landscape) · Margins: Default · ติ๊ก Background graphics</span>
+</div>
+<div class="wrap">
+
+  <!-- ============ แผ่นที่ 1: การรับ–จ่ายเงิน ============ -->
+  <div class="sheet page-break">
+    <div class="tag">แผ่นที่ 1 · หน้า 1 การรับ–จ่ายเงิน</div>
+    <div class="doc-head">
+      <div class="fy">ปีงบประมาณ 2569</div>
+      <div class="t1">การรับ – จ่ายเงิน</div>
+      <div class="t2">โรงเรียนวัดทุ่งจาน อำเภอปักธงชัย จังหวัดนครราชสีมา</div>
+      <div class="t3">ประจำเดือน เมษายน 2569</div>
+    </div>
+    <table class="reg">
+      <thead><tr>
+        <th style="width:12%">วัน เดือน ปี</th><th style="width:5%">ที่</th><th>รายการ</th>
+        <th style="width:13%">รายจ่าย</th><th style="width:13%">รายรับ</th><th style="width:16%">บัญชี</th>
+      </tr></thead>
+      <tbody>
+        <tr><td class="c">4 เม.ย. 69</td><td class="c">1</td><td>ค่าจัดการเรียนการสอน (อนุบาล 10000 ประถม 39300)</td><td class="num"></td><td class="num">49,100.00</td><td class="c">อ+ป.(อุดหนุน)</td></tr>
+        <tr><td class="c"></td><td class="c">2</td><td>ค่าหนังสือเรียน</td><td class="num"></td><td class="num">28,749.00</td><td class="c">หนังสือเรียน</td></tr>
+        <tr><td class="c"></td><td class="c">3</td><td>ค่าเครื่องแบบนักเรียน</td><td class="num"></td><td class="num">19,450.00</td><td class="c">เครื่องแบบ</td></tr>
+        <tr><td class="c"></td><td class="c">4</td><td>ค่าอุปกรณ์การเรียน</td><td class="num"></td><td class="num">10,090.00</td><td class="c">อุปกรณ์การเรียน</td></tr>
+        <tr><td class="c"></td><td class="c">5</td><td>ค่ากิจกรรมพัฒนาผู้เรียน</td><td class="num"></td><td class="num">15,840.00</td><td class="c">อ+ป.(พัฒนา)</td></tr>
+        <tr class="sum"><td colspan="3" class="c">รวมทั้งสิ้น</td><td class="num">0.00</td><td class="num">123,229.00</td><td></td></tr>
+      </tbody>
+    </table>
+    <div class="sign-row">
+      <div>ลงชื่อ................................ เจ้าหน้าที่การเงิน<br>(นางโสภิตรา จิตร)</div>
+      <div>ลงชื่อ................................ ผู้ตรวจสอบ<br>(นางอรทัย ธงภักดิ์)</div>
+      <div>ลงชื่อ................................ ผู้อำนวยการ<br>(คณิสนันท์ ทศวัฒนนนท์)</div>
+    </div>
+  </div>
+
+  <!-- ============ แผ่นที่ 2: ทะเบียนคุม บค./บจ./บย./บร. ============ -->
+  <div class="sheet page-break">
+    <div class="tag">แผ่นที่ 2 · ทะเบียนคุม บค./บจ./บย./บร.</div>
+    <div class="doc-head">
+      <div class="fy">ปีงบประมาณ 2569</div>
+      <div class="t1">ทะเบียนคุม บค./บจ./บย./บร.</div>
+      <div class="t2">โรงเรียนวัดทุ่งจาน อำเภอปักธงชัย จังหวัดนครราชสีมา</div>
+      <div class="t3">ประจำเดือน พฤษภาคม 2569</div>
+    </div>
+    <table class="reg">
+      <thead>
+        <tr><th rowspan="2" style="width:12%">วัน เดือน ปี</th><th colspan="2">เลขที่เอกสาร</th>
+        <th rowspan="2">รายการ</th><th rowspan="2" style="width:13%">จำนวนเงิน</th>
+        <th rowspan="2" style="width:15%">บัญชี</th><th rowspan="2" style="width:12%">หมายเหตุ</th></tr>
+        <tr><th style="width:8%">บค./บจ./บย./บร.</th><th style="width:7%">.../69</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="c">14 พ.ค. 69</td><td class="c">บจ</td><td class="c">144</td><td>ค่าชุดนักเรียน</td><td class="num">19,450.00</td><td class="c">เครื่องแบบ</td><td></td></tr>
+        <tr><td class="c"></td><td class="c">บจ</td><td class="c">145</td><td>ค่าอุปกรณ์การเรียน</td><td class="num">10,090.00</td><td class="c">อุปกรณ์การเรียน</td><td></td></tr>
+        <tr><td class="c"></td><td class="c">บย</td><td class="c">146</td><td>ยืมเงินค่าอุปกรณ์การเรียนจากบัญชีกองทุนฯ</td><td class="num">4,315.00</td><td class="c">กองทุน</td><td></td></tr>
+        <tr><td class="c"></td><td class="c">บย</td><td class="c">146</td><td>ยืมเงินค่าชุดนักเรียนจากบัญชีกองทุนฯ</td><td class="num">8,275.00</td><td class="c">กองทุน</td><td></td></tr>
+        <tr><td class="c"></td><td class="c">บค</td><td class="c">147</td><td>เบิกเงินค่าเบรคประชุมผู้ปกครอง 1/2569</td><td class="num">2,000.00</td><td class="c">อ+ป.(อุดหนุน)</td><td></td></tr>
+        <tr><td class="c">20 พ.ค. 69</td><td class="c">บจ</td><td class="c">148</td><td>ค่าชุดกีฬา อนุบาล โครงการกระดับคุณภาพปฐมวัยฯ</td><td class="num">2,500.00</td><td class="c">อ+ป.(พัฒนา)</td><td></td></tr>
+        <tr><td class="c"></td><td class="c">บจ</td><td class="c">149</td><td>ค่าชุดกีฬา ประถม โครงการยกระดับคุณภาพประถมฯ</td><td class="num">4,900.00</td><td class="c">อ+ป.(พัฒนา)</td><td></td></tr>
+        <tr class="sum"><td colspan="4" class="c">รวมทั้งสิ้น</td><td class="num">51,530.00</td><td colspan="2"></td></tr>
+      </tbody>
+    </table>
+    <div class="sign-row">
+      <div>ลงชื่อ................................ เจ้าหน้าที่การเงิน<br>(นางโสภิตรา จิตร)</div>
+      <div>ลงชื่อ................................ ผู้ตรวจสอบ<br>(นางอรทัย ธงภักดิ์)</div>
+      <div>ลงชื่อ................................ ผู้อำนวยการ<br>(คณิสนันท์ ทศวัฒนนนท์)</div>
+    </div>
+  </div>
+
+  <!-- ============ แผ่นที่ 3: ทะเบียนคุมเงินนอกงบประมาณ ============ -->
+  <div class="sheet">
+    <div class="tag">แผ่นที่ 3 · ทะเบียนคุมเงินนอกงบประมาณ (รายบัญชี)</div>
+    <div class="doc-head">
+      <div class="fy">ปีงบประมาณ 2569</div>
+      <div class="t1">ทะเบียนคุมเงินนอกงบประมาณ</div>
+      <div class="t2">ประเภทเงิน: จัดการเรียนการสอน (ประถม) &nbsp;&nbsp; โรงเรียนวัดทุ่งจาน สพป.นม.3</div>
+      <div class="t3">ประจำเดือน พฤษภาคม 2569</div>
+    </div>
+    <table class="reg">
+      <thead>
+        <tr><th rowspan="2" style="width:9%">วัน เดือน ปี</th><th rowspan="2" style="width:5%">ที่</th>
+        <th rowspan="2">รายการ</th><th rowspan="2" style="width:9%">รับ</th>
+        <th colspan="2">จ่าย</th><th colspan="3">คงเหลือ</th><th rowspan="2" style="width:8%">หมายเหตุ</th></tr>
+        <tr><th style="width:8%">ลูกหนี้</th><th style="width:8%">ใบสำคัญ</th>
+        <th style="width:8%">เงินสด</th><th style="width:9%">เงินฝากธนาคาร</th><th style="width:9%">เงินฝากส่วนราชการ</th></tr>
+      </thead>
+      <tbody>
+        <tr class="sum"><td colspan="3">ยอดยกมา พฤษภาคม 2569</td><td class="num"></td><td class="num"></td><td class="num"></td><td class="num"></td><td class="num">51,694.84</td><td class="num"></td><td></td></tr>
+        <tr><td class="c">14 พ.ค. 69</td><td class="c">147</td><td>เบิกเงินค่าเบรคประชุมผู้ปกครอง 1/2569</td><td class="num"></td><td class="num"></td><td class="num">2,000.00</td><td class="num"></td><td class="num">49,694.84</td><td class="num"></td><td></td></tr>
+        <tr><td class="c">20 พ.ค. 69</td><td class="c">148</td><td>ค่าชุดกีฬา อนุบาล</td><td class="num"></td><td class="num"></td><td class="num">2,500.00</td><td class="num"></td><td class="num">47,194.84</td><td class="num"></td><td></td></tr>
+        <tr><td class="c"></td><td class="c">149</td><td>ค่าชุดกีฬา ประถม</td><td class="num"></td><td class="num"></td><td class="num">4,900.00</td><td class="num"></td><td class="num">42,294.84</td><td class="num"></td><td></td></tr>
+        <tr class="sum"><td colspan="3" class="c">รวมเดือนนี้</td><td class="num">0.00</td><td class="num">0.00</td><td class="num">9,400.00</td><td class="num"></td><td class="num">42,294.84</td><td class="num"></td><td></td></tr>
+        <tr class="sum"><td colspan="3" class="c">รวมตั้งแต่ต้นปี</td><td class="num">17,370.00</td><td colspan="2" class="num">จ่ายสะสม 59,133.81</td><td class="num"></td><td class="num"></td><td class="num">42,294.84</td><td></td></tr>
+      </tbody>
+    </table>
+    <div class="sign-row">
+      <div>ลงชื่อ.................... ผู้ลงบัญชี<br>(นางโสภิตรา จิตร)</div>
+      <div>ลงชื่อ.................... ผู้ตรวจสอบ<br>(นางอรทัย ธงภักดิ์)</div>
+      <div>ลงชื่อ.................... ผู้บริหารสถานศึกษา<br>(คณิสนันท์ ทศวัฒนนนท์)</div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
