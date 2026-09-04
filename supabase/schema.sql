@@ -75,6 +75,18 @@ create table if not exists project_activities (
 );
 create index if not exists idx_activity_project on project_activities(project_id);
 
+-- ---------- 4.7) ค่าสาธารณูปโภค (ค่าน้ำ/ค่าไฟ/ค่าโทรศัพท์) รายเดือน ----------
+create table if not exists utility_bills (
+  id          uuid primary key default gen_random_uuid(),
+  bill_month  text not null,        -- 'YYYY-MM'
+  type        text not null,        -- water / electric / phone / internet / other
+  units       numeric default 0,    -- หน่วยที่ใช้
+  amount      numeric default 0,    -- จำนวนเงิน
+  note        text,
+  created_at  timestamptz default now()
+);
+create index if not exists idx_utility_month on utility_bills(bill_month);
+
 -- ---------- 5) ปฏิทิน/กิจกรรม ----------
 create table if not exists calendar_events (
   id         uuid primary key default gen_random_uuid(),
@@ -138,13 +150,14 @@ alter table teachers         enable row level security;
 alter table accounts         enable row level security;
 alter table projects         enable row level security;
 alter table project_activities enable row level security;
+alter table utility_bills     enable row level security;
 alter table calendar_events  enable row level security;
 alter table transactions     enable row level security;
 
 do $$
 declare t text;
 begin
-  foreach t in array array['school_info','positions','teachers','accounts','projects','project_activities','calendar_events','transactions']
+  foreach t in array array['school_info','positions','teachers','accounts','projects','project_activities','utility_bills','calendar_events','transactions']
   loop
     execute format('drop policy if exists "app_all" on %I;', t);
     execute format('create policy "app_all" on %I for all using (true) with check (true);', t);

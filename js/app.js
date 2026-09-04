@@ -15,6 +15,7 @@ window.App = (function () {
     { key: 'reg-vouchers', icon: '📘', label: 'บค./บจ./บย./บร.' },
     { key: 'reg-orders', icon: '📗', label: 'ใบสั่งซื้อ/สั่งจ้าง/ไปราชการ' },
     { key: 'reg-offbudget', icon: '📙', label: 'เงินนอกงบประมาณ' },
+    { key: 'reg-utility', icon: '💡', label: 'ค่าน้ำ-ไฟ-โทรศัพท์' },
     { group: 'รายงาน' },
     { key: 'report-projects', icon: '📊', label: 'รายงานงบโครงการ' },
     { group: 'ตั้งค่า' },

@@ -13,6 +13,7 @@ window.Store = (function () {
     accounts: [],
     projects: [],
     projectActivities: [],
+    utilityBills: [],
     events: [],
     transactions: [],
   };
@@ -32,17 +33,18 @@ window.Store = (function () {
 
   async function loadAll() {
     if (!configured) return false;
-    const [school, positions, teachers, accounts, projects, activities, events, txns] = await Promise.all([
+    const [school, positions, teachers, accounts, projects, activities, utilities, events, txns] = await Promise.all([
       sb.from('school_info').select('*').eq('id', 1).maybeSingle(),
       sb.from('positions').select('*').order('sort'),
       sb.from('teachers').select('*').order('sort'),
       sb.from('accounts').select('*').order('sort'),
       sb.from('projects').select('*').order('sort'),
       sb.from('project_activities').select('*').order('sort'),
+      sb.from('utility_bills').select('*').order('bill_month'),
       sb.from('calendar_events').select('*').order('event_date'),
       sb.from('transactions').select('*').order('txn_date').order('doc_no', { nullsFirst: true }).order('created_at'),
     ]);
-    const err = [school, positions, teachers, accounts, projects, activities, events, txns].find(r => r.error);
+    const err = [school, positions, teachers, accounts, projects, activities, utilities, events, txns].find(r => r.error);
     if (err && err.error) { console.error(err.error); throw err.error; }
     cache.school = school.data || null;
     cache.positions = positions.data || [];
@@ -50,6 +52,7 @@ window.Store = (function () {
     cache.accounts = accounts.data || [];
     cache.projects = projects.data || [];
     cache.projectActivities = activities.data || [];
+    cache.utilityBills = utilities.data || [];
     cache.events = events.data || [];
     cache.transactions = txns.data || [];
     return true;
@@ -123,6 +126,8 @@ window.Store = (function () {
   // ตัวกรองตามปีงบ
   function txnsFY(fy = getFY()) { return cache.transactions.filter(t => fyOfTxn(t) === fy); }
   function projectsFY(fy = getFY()) { return cache.projects.filter(p => Number(p.fiscal_year || START_FY) === fy); }
+  const fyOfMonth = ym => window.U ? U.fiscalYearOf(String(ym || '').slice(0, 7) + '-01') : START_FY;
+  function utilitiesFY(fy = getFY()) { return cache.utilityBills.filter(u => fyOfMonth(u.bill_month) === fy); }
 
   // ลบข้อมูลทั้งปีงบ (รายการในช่วงวันที่ของปีนั้น + โครงการของปีนั้น)
   async function deleteFY(fy) {
@@ -143,5 +148,5 @@ window.Store = (function () {
 
   return { init, isConfigured, client, data, loadAll, insert, insertMany, update, remove,
     upsertSchool, accountById, teacherById, positionById, projectById, projectByName, nextDocNo,
-    START_FY, fyList, getFY, setFY, txnsFY, projectsFY, deleteFY };
+    START_FY, fyList, getFY, setFY, txnsFY, projectsFY, utilitiesFY, deleteFY };
 })();
