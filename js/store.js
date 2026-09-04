@@ -10,6 +10,7 @@ window.Store = (function () {
     teachers: [],
     accounts: [],
     projects: [],
+    projectActivities: [],
     events: [],
     transactions: [],
   };
@@ -29,22 +30,24 @@ window.Store = (function () {
 
   async function loadAll() {
     if (!configured) return false;
-    const [school, positions, teachers, accounts, projects, events, txns] = await Promise.all([
+    const [school, positions, teachers, accounts, projects, activities, events, txns] = await Promise.all([
       sb.from('school_info').select('*').eq('id', 1).maybeSingle(),
       sb.from('positions').select('*').order('sort'),
       sb.from('teachers').select('*').order('sort'),
       sb.from('accounts').select('*').order('sort'),
       sb.from('projects').select('*').order('sort'),
+      sb.from('project_activities').select('*').order('sort'),
       sb.from('calendar_events').select('*').order('event_date'),
       sb.from('transactions').select('*').order('txn_date').order('doc_no', { nullsFirst: true }).order('created_at'),
     ]);
-    const err = [school, positions, teachers, accounts, projects, events, txns].find(r => r.error);
+    const err = [school, positions, teachers, accounts, projects, activities, events, txns].find(r => r.error);
     if (err && err.error) { console.error(err.error); throw err.error; }
     cache.school = school.data || null;
     cache.positions = positions.data || [];
     cache.teachers = teachers.data || [];
     cache.accounts = accounts.data || [];
     cache.projects = projects.data || [];
+    cache.projectActivities = activities.data || [];
     cache.events = events.data || [];
     cache.transactions = txns.data || [];
     return true;

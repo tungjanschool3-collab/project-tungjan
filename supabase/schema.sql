@@ -51,15 +51,28 @@ create table if not exists accounts (
 
 -- ---------- 4.5) โครงการ (พร้อมงบประมาณที่ได้รับ) ----------
 create table if not exists projects (
+  id            uuid primary key default gen_random_uuid(),
+  name          text not null,        -- ชื่อโครงการ
+  budget        numeric default 0,    -- งบประมาณรวมที่ได้รับจัดสรร
+  budget_adjust numeric default 0,    -- เงินเพิ่ม/ปรับงบ (กรณีเกิน/เหลือ, + หรือ -)
+  level         text,                 -- (สำรอง) ระดับรวมของโครงการ
+  responsible   text,                 -- (สำรอง) ผู้รับผิดชอบรวมของโครงการ
+  note          text,                 -- หมายเหตุ
+  sort          int default 0,
+  active        boolean default true
+);
+
+-- ---------- 4.6) กิจกรรมย่อยในโครงการ ----------
+create table if not exists project_activities (
   id          uuid primary key default gen_random_uuid(),
-  name        text not null,        -- ชื่อโครงการ
-  budget      numeric default 0,    -- งบที่ได้รับจัดสรร
+  project_id  uuid references projects(id) on delete cascade,
+  name        text not null,        -- ชื่อกิจกรรมย่อย
+  budget      numeric default 0,    -- งบประมาณย่อย
   level       text,                 -- ระดับ (อนุบาล/ประถม/รวม/อื่นๆ)
   responsible text,                 -- ผู้รับผิดชอบ
-  note        text,                 -- หมายเหตุ
-  sort        int default 0,
-  active      boolean default true
+  sort        int default 0
 );
+create index if not exists idx_activity_project on project_activities(project_id);
 
 -- ---------- 5) ปฏิทิน/กิจกรรม ----------
 create table if not exists calendar_events (
@@ -122,13 +135,14 @@ alter table positions        enable row level security;
 alter table teachers         enable row level security;
 alter table accounts         enable row level security;
 alter table projects         enable row level security;
+alter table project_activities enable row level security;
 alter table calendar_events  enable row level security;
 alter table transactions     enable row level security;
 
 do $$
 declare t text;
 begin
-  foreach t in array array['school_info','positions','teachers','accounts','projects','calendar_events','transactions']
+  foreach t in array array['school_info','positions','teachers','accounts','projects','project_activities','calendar_events','transactions']
   loop
     execute format('drop policy if exists "app_all" on %I;', t);
     execute format('create policy "app_all" on %I for all using (true) with check (true);', t);

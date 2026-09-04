@@ -190,15 +190,18 @@
     });
   }
 
-  // ---------------- โครงการ ----------------
-  // นิยามคอลัมน์ + คำที่ใช้จับหัวตารางตอนนำเข้า (ยืดหยุ่นกับหัวคอลัมน์ที่ต่างกัน)
-  const P_COLS = [
-    { key: 'name',        header: 'ชื่อโครงการ', match: ['ชื่อ', 'โครงการ', 'name', 'project'] },
-    { key: 'budget',      header: 'งบที่ได้รับ',  match: ['งบ', 'เงิน', 'จำนวน', 'budget', 'amount'] },
+  // ---------------- โครงการ + กิจกรรมย่อย ----------------
+  // CSV แบบเรียบ: 1 แถว = 1 กิจกรรมย่อย (โครงการที่ซ้ำจะถูกจับกลุ่มให้เอง)
+  const PROJ_COLS = [
+    { key: 'project',     header: 'โครงการ',      match: ['โครงการ', 'project'] },
+    { key: 'total',       header: 'งบประมาณรวม',  match: ['งบประมาณรวม', 'งบรวม', 'รวม', 'total'] },
+    { key: 'activity',    header: 'กิจกรรม',      match: ['กิจกรรม', 'activity'] },
+    { key: 'sub',         header: 'งบประมาณย่อย', match: ['ย่อย', 'งบกิจกรรม', 'sub'] },
     { key: 'level',       header: 'ระดับ',        match: ['ระดับ', 'level'] },
     { key: 'responsible', header: 'ผู้รับผิดชอบ',  match: ['รับผิดชอบ', 'ผู้รับ', 'responsible', 'owner'] },
-    { key: 'note',        header: 'หมายเหตุ',     match: ['หมายเหตุ', 'หมาย', 'note', 'remark'] },
   ];
+  const netBudget = p => Number(p.budget || 0) + Number(p.budget_adjust || 0);
+  const actsOf = pid => (Store.data().projectActivities || []).filter(a => a.project_id === pid).sort((x, y) => (x.sort || 0) - (y.sort || 0));
 
   function parseNum(v) {
     if (typeof v === 'number') return v;
@@ -207,10 +210,10 @@
   }
 
   function renderProjects(c, D) {
-    const totalBudget = D.projects.reduce((s, p) => s + Number(p.budget || 0), 0);
-    const card = U.el(`<div class="card">
+    // แถบเครื่องมือ
+    const bar = U.el(`<div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-        <div><h3>โครงการของโรงเรียน</h3><div class="sub">เก็บชื่อโครงการ + งบที่ได้รับ ใช้เลือกตอนบันทึกรายการ และนำเข้า/ส่งออกเป็น CSV ได้</div></div>
+        <div><h3>โครงการ &amp; กิจกรรมย่อย</h3><div class="sub">แต่ละโครงการมีงบประมาณรวม แตกเป็นกิจกรรมย่อย (งบย่อย/ระดับ/ผู้รับผิดชอบ) — นำเข้า/ส่งออก CSV ได้</div></div>
         <div class="btn-row" style="flex-wrap:wrap">
           <button class="btn primary sm" id="addProj">+ เพิ่มโครงการ</button>
           <button class="btn excel sm" id="expProj">⬇️ ส่งออก CSV</button>
@@ -219,33 +222,64 @@
           <input type="file" id="impFile" accept=".csv,.xlsx,.xls" style="display:none">
         </div>
       </div>
-      <div class="table-wrap"><table class="data">
-      <thead><tr><th>ชื่อโครงการ</th><th class="num">งบที่ได้รับ</th><th>ระดับ</th><th>ผู้รับผิดชอบ</th><th>หมายเหตุ</th><th style="width:90px"></th></tr></thead>
-      <tbody id="projBody"></tbody>
-      <tfoot><tr style="font-weight:700;background:#f7f9fe"><td style="text-align:right">รวมงบทั้งสิ้น (${D.projects.length} โครงการ)</td><td class="num">${U.money(totalBudget)}</td><td colspan="4"></td></tr></tfoot>
-      </table></div>
     </div>`);
-    const b = card.querySelector('#projBody');
-    if (!D.projects.length) b.appendChild(U.el('<tr><td colspan="6"><div class="empty">ยังไม่มีโครงการ — กด “+ เพิ่มโครงการ” หรือ “นำเข้า CSV/Excel”</div></td></tr>'));
-    D.projects.forEach(p => {
-      const tr = U.el(`<tr>
-        <td><b>${U.esc(p.name)}</b></td>
-        <td class="num">${U.money(p.budget)}</td>
-        <td>${U.esc(p.level || '')}</td>
-        <td>${U.esc(p.responsible || '')}</td>
-        <td>${U.esc(p.note || '')}</td>
-        <td><div class="row-actions"><button class="icon-btn">✏️</button><button class="icon-btn del">🗑️</button></div></td></tr>`);
-      tr.querySelectorAll('button')[0].onclick = () => editProject(p);
-      tr.querySelectorAll('button')[1].onclick = () => delRow('projects', p.id, `ลบโครงการ "${p.name}"?`);
-      b.appendChild(tr);
-    });
-    card.querySelector('#addProj').onclick = () => editProject(null);
-    card.querySelector('#expProj').onclick = exportProjectsCSV;
-    card.querySelector('#tplProj').onclick = downloadProjectTemplate;
-    const fileInput = card.querySelector('#impFile');
-    card.querySelector('#impProj').onclick = () => fileInput.click();
+    bar.querySelector('#addProj').onclick = () => editProject(null);
+    bar.querySelector('#expProj').onclick = exportProjectsCSV;
+    bar.querySelector('#tplProj').onclick = downloadProjectTemplate;
+    const fileInput = bar.querySelector('#impFile');
+    bar.querySelector('#impProj').onclick = () => fileInput.click();
     fileInput.onchange = () => { if (fileInput.files[0]) importProjectsFile(fileInput.files[0]); fileInput.value = ''; };
-    c.appendChild(card);
+    c.appendChild(bar);
+
+    if (!D.projects.length) {
+      c.appendChild(U.el('<div class="card"><div class="empty">ยังไม่มีโครงการ — กด “+ เพิ่มโครงการ” หรือ “นำเข้า CSV/Excel”</div></div>'));
+      return;
+    }
+
+    D.projects.forEach(p => {
+      const list = actsOf(p.id);
+      const subTotal = list.reduce((s, a) => s + Number(a.budget || 0), 0);
+      const net = netBudget(p);
+      const adjust = Number(p.budget_adjust || 0);
+      const over = subTotal > net;
+      const card = U.el(`<div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
+          <div>
+            <h3 style="margin:0 0 2px">${U.esc(p.name)}</h3>
+            <div class="sub">งบประมาณรวม <b>${U.money(p.budget)}</b>${adjust ? ` ${adjust > 0 ? '+' : '−'} เพิ่ม/ปรับ ${U.money(Math.abs(adjust))} = งบสุทธิ <b>${U.money(net)}</b>` : ''} · รวมงบกิจกรรมย่อย ${U.money(subTotal)}${over ? ' <span style="color:#c0392b">(เกินงบ)</span>' : ''}</div>
+          </div>
+          <div class="btn-row">
+            <button class="btn primary sm addAct">+ เพิ่มกิจกรรม</button>
+            <button class="icon-btn editP" title="แก้ไขโครงการ">✏️</button>
+            <button class="icon-btn del delP" title="ลบโครงการ">🗑️</button>
+          </div>
+        </div>
+        <div class="table-wrap"><table class="data">
+          <thead><tr><th>กิจกรรมย่อย</th><th class="num">งบประมาณย่อย</th><th>ระดับ</th><th>ผู้รับผิดชอบ</th><th style="width:90px"></th></tr></thead>
+          <tbody class="actBody"></tbody>
+        </table></div>
+      </div>`);
+      const tb = card.querySelector('.actBody');
+      if (!list.length) tb.appendChild(U.el('<tr><td colspan="5"><div class="empty" style="padding:10px 0">ยังไม่มีกิจกรรมย่อย — กด “+ เพิ่มกิจกรรม”</div></td></tr>'));
+      list.forEach(a => {
+        const tr = U.el(`<tr>
+          <td>${U.esc(a.name)}</td>
+          <td class="num">${U.money(a.budget)}</td>
+          <td>${U.esc(a.level || '')}</td>
+          <td>${U.esc(a.responsible || '')}</td>
+          <td><div class="row-actions"><button class="icon-btn">✏️</button><button class="icon-btn del">🗑️</button></div></td></tr>`);
+        tr.querySelectorAll('button')[0].onclick = () => editActivity(p, a);
+        tr.querySelectorAll('button')[1].onclick = () => delRow('project_activities', a.id, `ลบกิจกรรม "${a.name}"?`);
+        tb.appendChild(tr);
+      });
+      card.querySelector('.addAct').onclick = () => editActivity(p, null);
+      card.querySelector('.editP').onclick = () => editProject(p);
+      card.querySelector('.delP').onclick = () => delRow('projects', p.id, `ลบโครงการ "${p.name}"? (กิจกรรมย่อยทั้งหมดจะถูกลบด้วย)`);
+      c.appendChild(card);
+    });
+
+    const gBudget = D.projects.reduce((s, p) => s + netBudget(p), 0);
+    c.appendChild(U.el(`<div class="card" style="font-weight:700;background:#f7f9fe">รวมงบประมาณสุทธิทุกโครงการ (${D.projects.length} โครงการ): ${U.money(gBudget)}</div>`));
   }
 
   function editProject(p) {
@@ -254,17 +288,39 @@
       title: p ? 'แก้ไขโครงการ' : 'เพิ่มโครงการ',
       fields: [
         { name: 'name', label: 'ชื่อโครงการ', required: true, col: 1 },
-        { name: 'budget', label: 'งบที่ได้รับ (บาท)', type: 'number', step: '0.01' },
-        { name: 'level', label: 'ระดับ', type: 'select',
-          options: [{ value: '', label: '— ไม่ระบุ —' }].concat(['อนุบาล', 'ประถม', 'รวม', 'อื่นๆ'].map(x => ({ value: x, label: x }))) },
-        { name: 'responsible', label: 'ผู้รับผิดชอบ' },
+        { name: 'budget', label: 'งบประมาณรวม (บาท)', type: 'number', step: '0.01' },
+        { name: 'budget_adjust', label: 'เพิ่ม/ปรับงบ (กรณีเกินหรือเหลือ, ใส่ − ได้)', type: 'number', step: '0.01', hint: 'บวกเพิ่มเมื่อได้เงินเพิ่ม, ใส่เลขติดลบเมื่อถูกหักคืน' },
         { name: 'note', label: 'หมายเหตุ', type: 'textarea', col: 1 },
       ],
-      values: p || { budget: 0 },
+      values: p || { budget: 0, budget_adjust: 0 },
       onSubmit: async (v) => {
         if (p) { await Store.update('projects', p.id, v); }
         else { v.sort = (Store.data().projects.length + 1) * 10; v.active = true; await Store.insert('projects', v); }
         U.toast('บันทึกโครงการแล้ว'); await refresh();
+      },
+    });
+  }
+
+  function editActivity(project, a) {
+    App.formModal({
+      width: '620px',
+      title: (a ? 'แก้ไขกิจกรรม' : 'เพิ่มกิจกรรม') + ' — ' + project.name,
+      fields: [
+        { name: 'name', label: 'ชื่อกิจกรรมย่อย', required: true, col: 1 },
+        { name: 'budget', label: 'งบประมาณย่อย (บาท)', type: 'number', step: '0.01' },
+        { name: 'level', label: 'ระดับ', type: 'select',
+          options: [{ value: '', label: '— ไม่ระบุ —' }].concat(['อนุบาล', 'ประถม', 'รวม', 'อื่นๆ'].map(x => ({ value: x, label: x }))) },
+        { name: 'responsible', label: 'ผู้รับผิดชอบ' },
+      ],
+      values: a || { budget: 0 },
+      onSubmit: async (v) => {
+        if (a) { await Store.update('project_activities', a.id, v); }
+        else {
+          v.project_id = project.id;
+          v.sort = (actsOf(project.id).length + 1) * 10;
+          await Store.insert('project_activities', v);
+        }
+        U.toast('บันทึกกิจกรรมแล้ว'); await refresh();
       },
     });
   }
@@ -285,68 +341,82 @@
     setTimeout(() => URL.revokeObjectURL(url), 1500);
   }
   function exportProjectsCSV() {
-    const rows = [P_COLS.map(c => c.header)];
-    Store.data().projects.forEach(p => rows.push([p.name || '', Number(p.budget || 0), p.level || '', p.responsible || '', p.note || '']));
-    if (rows.length === 1) { U.toast('ยังไม่มีโครงการให้ส่งออก', 'err'); return; }
-    downloadCSV('โครงการ.csv', rows);
+    const D = Store.data();
+    if (!D.projects.length) { U.toast('ยังไม่มีโครงการให้ส่งออก', 'err'); return; }
+    const rows = [PROJ_COLS.map(c => c.header)];
+    D.projects.forEach(p => {
+      const list = actsOf(p.id);
+      if (!list.length) rows.push([p.name || '', Number(p.budget || 0), '', '', '', '']);
+      else list.forEach(a => rows.push([p.name || '', Number(p.budget || 0), a.name || '', Number(a.budget || 0), a.level || '', a.responsible || '']));
+    });
+    downloadCSV('โครงการและกิจกรรม.csv', rows);
     U.toast('ส่งออก CSV แล้ว');
   }
   function downloadProjectTemplate() {
     downloadCSV('แม่แบบโครงการ.csv', [
-      P_COLS.map(c => c.header),
-      ['อาหารกลางวัน', 200000, 'รวม', 'ครูสมชาย', 'อุดหนุนรายหัว'],
-      ['เรียนฟรี 15 ปี (อุปกรณ์)', 50000, 'ประถม', 'ครูสมหญิง', ''],
+      PROJ_COLS.map(c => c.header),
+      ['อาหารกลางวัน', 200000, 'จัดซื้อวัตถุดิบ', 150000, 'รวม', 'ครูสมชาย'],
+      ['อาหารกลางวัน', 200000, 'จ้างแม่ครัว', 50000, 'รวม', 'ครูสมหญิง'],
+      ['เรียนฟรี 15 ปี', 80000, 'ค่าอุปกรณ์การเรียน', 80000, 'ประถม', 'ครูสมศรี'],
     ]);
     U.toast('ดาวน์โหลดไฟล์ตัวอย่างแล้ว');
   }
 
-  // ---- นำเข้า CSV/Excel ----
+  // ---- นำเข้า CSV/Excel (1 แถว = 1 กิจกรรมย่อย, จับกลุ่มตามโครงการ) ----
   async function importProjectsFile(file) {
     if (!window.XLSX) { U.toast('ยังโหลดไลบรารีอ่านไฟล์ไม่สำเร็จ', 'err'); return; }
     let aoa;
     try {
       const buf = await file.arrayBuffer();
       const wb = XLSX.read(new Uint8Array(buf), { type: 'array' });
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      aoa = XLSX.utils.sheet_to_json(ws, { header: 1, blankrows: false, defval: '' });
+      aoa = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, blankrows: false, defval: '' });
     } catch (e) { U.toast('อ่านไฟล์ไม่สำเร็จ: ' + (e.message || e), 'err'); return; }
     if (!aoa || aoa.length < 2) { U.toast('ไฟล์ว่าง หรือไม่มีข้อมูล', 'err'); return; }
 
-    // จับหัวคอลัมน์ -> ตำแหน่ง
     const headers = aoa[0].map(h => String(h || '').toLowerCase().trim());
     const idx = {};
-    P_COLS.forEach(col => {
-      idx[col.key] = headers.findIndex(h => col.match.some(m => h.includes(m.toLowerCase())));
-    });
-    if (idx.name < 0) { U.toast('ไม่พบคอลัมน์ "ชื่อโครงการ" ในไฟล์', 'err'); return; }
+    PROJ_COLS.forEach(col => { idx[col.key] = headers.findIndex(h => col.match.some(m => h.includes(m.toLowerCase()))); });
+    if (idx.project < 0) { U.toast('ไม่พบคอลัมน์ "โครงการ" ในไฟล์', 'err'); return; }
 
-    const existing = new Set(Store.data().projects.map(p => (p.name || '').trim()));
-    let base = (Store.data().projects.reduce((m, p) => Math.max(m, p.sort || 0), 0)) + 10;
-    const rows = [], skipped = [];
+    // จับกลุ่มแถวตามชื่อโครงการ (คงลำดับ)
+    const order = [], groups = {};
     for (let r = 1; r < aoa.length; r++) {
-      const get = k => idx[k] >= 0 ? aoa[r][idx[k]] : '';
-      const name = String(get('name') || '').trim();
-      if (!name) continue;
-      if (existing.has(name)) { skipped.push(name); continue; }
-      existing.add(name);
-      rows.push({
-        name,
-        budget: parseNum(get('budget')),
-        level: String(get('level') || '').trim() || null,
-        responsible: String(get('responsible') || '').trim() || null,
-        note: String(get('note') || '').trim() || null,
-        sort: base, active: true,
-      });
-      base += 10;
+      const g = k => idx[k] >= 0 ? aoa[r][idx[k]] : '';
+      const pname = String(g('project') || '').trim();
+      if (!pname) continue;
+      if (!groups[pname]) { groups[pname] = { total: parseNum(g('total')), acts: [] }; order.push(pname); }
+      else if (!groups[pname].total) { groups[pname].total = parseNum(g('total')); }
+      const aname = String(g('activity') || '').trim();
+      if (aname) groups[pname].acts.push({ name: aname, budget: parseNum(g('sub')), level: String(g('level') || '').trim() || null, responsible: String(g('responsible') || '').trim() || null });
     }
-    if (!rows.length) { U.toast(skipped.length ? `ทุกโครงการมีอยู่แล้ว (ข้าม ${skipped.length})` : 'ไม่พบข้อมูลโครงการในไฟล์', 'err'); return; }
+    if (!order.length) { U.toast('ไม่พบข้อมูลโครงการในไฟล์', 'err'); return; }
 
+    const totalActs = order.reduce((s, n) => s + groups[n].acts.length, 0);
     App.confirmDialog(
-      `พบ ${rows.length} โครงการใหม่${skipped.length ? ` (ข้าม ${skipped.length} ที่มีชื่อซ้ำ)` : ''} — ยืนยันนำเข้า?`,
+      `พบ ${order.length} โครงการ และ ${totalActs} กิจกรรมย่อย — ยืนยันนำเข้า? (โครงการชื่อซ้ำจะใช้ของเดิม แล้วเพิ่มกิจกรรมที่ยังไม่มี)`,
       async () => {
         try {
-          await Store.insertMany('projects', rows);
-          U.toast(`นำเข้า ${rows.length} โครงการแล้ว`); await refresh();
+          const D = Store.data();
+          const byName = {};
+          D.projects.forEach(p => byName[(p.name || '').trim()] = p);
+          const toCreate = order.filter(n => !byName[n]).map((n, i) => ({ name: n, budget: groups[n].total, sort: (D.projects.length + i + 1) * 10, active: true }));
+          let created = [];
+          if (toCreate.length) created = await Store.insertMany('projects', toCreate);
+          created.forEach(p => byName[(p.name || '').trim()] = p);
+
+          const existActs = new Set((D.projectActivities || []).map(a => a.project_id + '|' + (a.name || '').trim()));
+          const actRows = [];
+          order.forEach(n => {
+            const proj = byName[n]; if (!proj) return;
+            groups[n].acts.forEach((a, i) => {
+              const key = proj.id + '|' + a.name;
+              if (existActs.has(key)) return;
+              existActs.add(key);
+              actRows.push(Object.assign({}, a, { project_id: proj.id, sort: (i + 1) * 10 }));
+            });
+          });
+          if (actRows.length) await Store.insertMany('project_activities', actRows);
+          U.toast(`นำเข้า ${created.length} โครงการใหม่ + ${actRows.length} กิจกรรม`); await refresh();
         } catch (e) { U.toast('นำเข้าไม่สำเร็จ: ' + (e.message || e), 'err'); }
       },
       { danger: false, yes: 'นำเข้า' }
