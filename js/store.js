@@ -9,6 +9,7 @@ window.Store = (function () {
     positions: [],
     teachers: [],
     accounts: [],
+    projects: [],
     events: [],
     transactions: [],
   };
@@ -28,20 +29,22 @@ window.Store = (function () {
 
   async function loadAll() {
     if (!configured) return false;
-    const [school, positions, teachers, accounts, events, txns] = await Promise.all([
+    const [school, positions, teachers, accounts, projects, events, txns] = await Promise.all([
       sb.from('school_info').select('*').eq('id', 1).maybeSingle(),
       sb.from('positions').select('*').order('sort'),
       sb.from('teachers').select('*').order('sort'),
       sb.from('accounts').select('*').order('sort'),
+      sb.from('projects').select('*').order('sort'),
       sb.from('calendar_events').select('*').order('event_date'),
       sb.from('transactions').select('*').order('txn_date').order('doc_no', { nullsFirst: true }).order('created_at'),
     ]);
-    const err = [school, positions, teachers, accounts, events, txns].find(r => r.error);
+    const err = [school, positions, teachers, accounts, projects, events, txns].find(r => r.error);
     if (err && err.error) { console.error(err.error); throw err.error; }
     cache.school = school.data || null;
     cache.positions = positions.data || [];
     cache.teachers = teachers.data || [];
     cache.accounts = accounts.data || [];
+    cache.projects = projects.data || [];
     cache.events = events.data || [];
     cache.transactions = txns.data || [];
     return true;
@@ -74,6 +77,15 @@ window.Store = (function () {
   const accountById = id => cache.accounts.find(a => a.id === id);
   const teacherById = id => cache.teachers.find(t => t.id === id);
   const positionById = id => cache.positions.find(p => p.id === id);
+  const projectById = id => cache.projects.find(p => p.id === id);
+  const projectByName = name => cache.projects.find(p => (p.name || '').trim() === (name || '').trim());
+  // เพิ่มหลายแถวพร้อมกัน (ใช้ตอนนำเข้า CSV)
+  async function insertMany(table, rows) {
+    if (!rows || !rows.length) return [];
+    const { data, error } = await sb.from(table).insert(rows).select();
+    if (error) throw error;
+    return data || [];
+  }
 
   // เลขที่เอกสารถัดไป (running number) ต่อปีงบ
   function nextDocNo() {
@@ -81,6 +93,6 @@ window.Store = (function () {
     return (nums.length ? Math.max(...nums) : 0) + 1;
   }
 
-  return { init, isConfigured, client, data, loadAll, insert, update, remove,
-    upsertSchool, accountById, teacherById, positionById, nextDocNo };
+  return { init, isConfigured, client, data, loadAll, insert, insertMany, update, remove,
+    upsertSchool, accountById, teacherById, positionById, projectById, projectByName, nextDocNo };
 })();

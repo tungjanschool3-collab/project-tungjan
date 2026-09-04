@@ -148,7 +148,7 @@
           <div class="field"><label>เลขใบสั่งซื้อ</label><input id="f_po" value="${U.esc(v.po_no||'')}"></div>
           <div class="field"><label>เลขใบสั่งจ้าง</label><input id="f_hire" value="${U.esc(v.hire_no||'')}"></div>
           <div class="field"><label>เลขบันทึกข้อความ</label><input id="f_memo" value="${U.esc(v.memo_no||'')}"></div>
-          <div class="field" style="grid-column:span 2"><label>โครงการ</label><input id="f_proj" value="${U.esc(v.project||'')}"></div>
+          <div class="field" style="grid-column:span 2"><label>โครงการ</label><input id="f_proj" list="projOptions" value="${U.esc(v.project||'')}" placeholder="พิมพ์ หรือเลือกจากรายการโครงการ"><datalist id="projOptions"></datalist></div>
           <div class="field"><label>ระดับ</label><input id="f_level" value="${U.esc(v.level||'')}" placeholder="อนุบาล/ประถม"></div>
           <div class="field"><label>ล้างหนี้</label><select id="f_clear"></select></div>
           <div class="field"><label>ครูที่รับผิดชอบ</label><select id="f_teacher"></select></div>
@@ -165,6 +165,10 @@
     sel('#f_clear', [{ value: '', label: '—' }, { value: 'cleared', label: 'เช็คล้างหนี้' }, { value: 'none', label: 'ไม่ทำ' }], v.clear_status || '');
     sel('#f_teacher', teacherOpts, v.teacher_id);
 
+    // เติมรายการโครงการให้ช่อง datalist (เลือกได้ หรือพิมพ์เอง)
+    const projDL = body.querySelector('#projOptions');
+    D.projects.forEach(p => projDL.appendChild(U.el(`<option value="${U.esc(p.name)}"></option>`)));
+
     const foot = U.el('<div class="btn-row"></div>');
     const cancel = U.el('<button class="btn ghost">ยกเลิก</button>');
     const save = U.el('<button class="btn primary">💾 บันทึกรายการ</button>');
@@ -180,6 +184,7 @@
         pay_debtor: Number(g('#f_paydebt').value || 0), pay_voucher: Number(g('#f_payvou').value || 0),
         po_no: g('#f_po').value.trim() || null, hire_no: g('#f_hire').value.trim() || null,
         memo_no: g('#f_memo').value.trim() || null, project: g('#f_proj').value.trim() || null,
+        project_id: (Store.projectByName(g('#f_proj').value.trim()) || {}).id || null,
         level: g('#f_level').value.trim() || null, travel: g('#f_travel').checked,
         clear_status: g('#f_clear').value || null, teacher_id: g('#f_teacher').value || null,
         notes: g('#f_notes').value.trim() || null,

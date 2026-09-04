@@ -7,6 +7,7 @@
     { k: 'school', label: '🏫 ข้อมูลโรงเรียน' },
     { k: 'staff', label: '👩‍🏫 ครู & ตำแหน่ง' },
     { k: 'accounts', label: '📒 บัญชี & ยอดยกมา' },
+    { k: 'projects', label: '📁 โครงการ' },
     { k: 'calendar', label: '📅 ปฏิทิน' },
   ];
 
@@ -28,6 +29,7 @@
     if (tab === 'school') renderSchool(body, D);
     if (tab === 'staff') renderStaff(body, D);
     if (tab === 'accounts') renderAccounts(body, D);
+    if (tab === 'projects') renderProjects(body, D);
     if (tab === 'calendar') renderCalendar(body, D);
   }
 
@@ -186,6 +188,169 @@
         U.toast('บันทึกบัญชีแล้ว'); await refresh();
       },
     });
+  }
+
+  // ---------------- โครงการ ----------------
+  // นิยามคอลัมน์ + คำที่ใช้จับหัวตารางตอนนำเข้า (ยืดหยุ่นกับหัวคอลัมน์ที่ต่างกัน)
+  const P_COLS = [
+    { key: 'name',        header: 'ชื่อโครงการ', match: ['ชื่อ', 'โครงการ', 'name', 'project'] },
+    { key: 'budget',      header: 'งบที่ได้รับ',  match: ['งบ', 'เงิน', 'จำนวน', 'budget', 'amount'] },
+    { key: 'level',       header: 'ระดับ',        match: ['ระดับ', 'level'] },
+    { key: 'responsible', header: 'ผู้รับผิดชอบ',  match: ['รับผิดชอบ', 'ผู้รับ', 'responsible', 'owner'] },
+    { key: 'note',        header: 'หมายเหตุ',     match: ['หมายเหตุ', 'หมาย', 'note', 'remark'] },
+  ];
+
+  function parseNum(v) {
+    if (typeof v === 'number') return v;
+    const n = parseFloat(String(v == null ? '' : v).replace(/[^0-9.\-]/g, ''));
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  function renderProjects(c, D) {
+    const totalBudget = D.projects.reduce((s, p) => s + Number(p.budget || 0), 0);
+    const card = U.el(`<div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <div><h3>โครงการของโรงเรียน</h3><div class="sub">เก็บชื่อโครงการ + งบที่ได้รับ ใช้เลือกตอนบันทึกรายการ และนำเข้า/ส่งออกเป็น CSV ได้</div></div>
+        <div class="btn-row" style="flex-wrap:wrap">
+          <button class="btn primary sm" id="addProj">+ เพิ่มโครงการ</button>
+          <button class="btn excel sm" id="expProj">⬇️ ส่งออก CSV</button>
+          <button class="btn sm" id="impProj">⬆️ นำเข้า CSV/Excel</button>
+          <button class="btn ghost sm" id="tplProj">📄 ไฟล์ตัวอย่าง</button>
+          <input type="file" id="impFile" accept=".csv,.xlsx,.xls" style="display:none">
+        </div>
+      </div>
+      <div class="table-wrap"><table class="data">
+      <thead><tr><th>ชื่อโครงการ</th><th class="num">งบที่ได้รับ</th><th>ระดับ</th><th>ผู้รับผิดชอบ</th><th>หมายเหตุ</th><th style="width:90px"></th></tr></thead>
+      <tbody id="projBody"></tbody>
+      <tfoot><tr style="font-weight:700;background:#f7f9fe"><td style="text-align:right">รวมงบทั้งสิ้น (${D.projects.length} โครงการ)</td><td class="num">${U.money(totalBudget)}</td><td colspan="4"></td></tr></tfoot>
+      </table></div>
+    </div>`);
+    const b = card.querySelector('#projBody');
+    if (!D.projects.length) b.appendChild(U.el('<tr><td colspan="6"><div class="empty">ยังไม่มีโครงการ — กด “+ เพิ่มโครงการ” หรือ “นำเข้า CSV/Excel”</div></td></tr>'));
+    D.projects.forEach(p => {
+      const tr = U.el(`<tr>
+        <td><b>${U.esc(p.name)}</b></td>
+        <td class="num">${U.money(p.budget)}</td>
+        <td>${U.esc(p.level || '')}</td>
+        <td>${U.esc(p.responsible || '')}</td>
+        <td>${U.esc(p.note || '')}</td>
+        <td><div class="row-actions"><button class="icon-btn">✏️</button><button class="icon-btn del">🗑️</button></div></td></tr>`);
+      tr.querySelectorAll('button')[0].onclick = () => editProject(p);
+      tr.querySelectorAll('button')[1].onclick = () => delRow('projects', p.id, `ลบโครงการ "${p.name}"?`);
+      b.appendChild(tr);
+    });
+    card.querySelector('#addProj').onclick = () => editProject(null);
+    card.querySelector('#expProj').onclick = exportProjectsCSV;
+    card.querySelector('#tplProj').onclick = downloadProjectTemplate;
+    const fileInput = card.querySelector('#impFile');
+    card.querySelector('#impProj').onclick = () => fileInput.click();
+    fileInput.onchange = () => { if (fileInput.files[0]) importProjectsFile(fileInput.files[0]); fileInput.value = ''; };
+    c.appendChild(card);
+  }
+
+  function editProject(p) {
+    App.formModal({
+      width: '620px',
+      title: p ? 'แก้ไขโครงการ' : 'เพิ่มโครงการ',
+      fields: [
+        { name: 'name', label: 'ชื่อโครงการ', required: true, col: 1 },
+        { name: 'budget', label: 'งบที่ได้รับ (บาท)', type: 'number', step: '0.01' },
+        { name: 'level', label: 'ระดับ', type: 'select',
+          options: [{ value: '', label: '— ไม่ระบุ —' }].concat(['อนุบาล', 'ประถม', 'รวม', 'อื่นๆ'].map(x => ({ value: x, label: x }))) },
+        { name: 'responsible', label: 'ผู้รับผิดชอบ' },
+        { name: 'note', label: 'หมายเหตุ', type: 'textarea', col: 1 },
+      ],
+      values: p || { budget: 0 },
+      onSubmit: async (v) => {
+        if (p) { await Store.update('projects', p.id, v); }
+        else { v.sort = (Store.data().projects.length + 1) * 10; v.active = true; await Store.insert('projects', v); }
+        U.toast('บันทึกโครงการแล้ว'); await refresh();
+      },
+    });
+  }
+
+  // ---- CSV: ดาวน์โหลด (มี BOM ให้ Excel อ่านภาษาไทยได้) ----
+  function csvCell(v) {
+    const s = String(v == null ? '' : v);
+    return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+  function downloadCSV(filename, aoa) {
+    const BOM = String.fromCharCode(0xFEFF); // ให้ Excel เปิดไฟล์แล้วภาษาไทยไม่เพี้ยน
+    const text = BOM + aoa.map(row => row.map(csvCell).join(',')).join('\r\n');
+    const blob = new Blob([text], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+  }
+  function exportProjectsCSV() {
+    const rows = [P_COLS.map(c => c.header)];
+    Store.data().projects.forEach(p => rows.push([p.name || '', Number(p.budget || 0), p.level || '', p.responsible || '', p.note || '']));
+    if (rows.length === 1) { U.toast('ยังไม่มีโครงการให้ส่งออก', 'err'); return; }
+    downloadCSV('โครงการ.csv', rows);
+    U.toast('ส่งออก CSV แล้ว');
+  }
+  function downloadProjectTemplate() {
+    downloadCSV('แม่แบบโครงการ.csv', [
+      P_COLS.map(c => c.header),
+      ['อาหารกลางวัน', 200000, 'รวม', 'ครูสมชาย', 'อุดหนุนรายหัว'],
+      ['เรียนฟรี 15 ปี (อุปกรณ์)', 50000, 'ประถม', 'ครูสมหญิง', ''],
+    ]);
+    U.toast('ดาวน์โหลดไฟล์ตัวอย่างแล้ว');
+  }
+
+  // ---- นำเข้า CSV/Excel ----
+  async function importProjectsFile(file) {
+    if (!window.XLSX) { U.toast('ยังโหลดไลบรารีอ่านไฟล์ไม่สำเร็จ', 'err'); return; }
+    let aoa;
+    try {
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(new Uint8Array(buf), { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      aoa = XLSX.utils.sheet_to_json(ws, { header: 1, blankrows: false, defval: '' });
+    } catch (e) { U.toast('อ่านไฟล์ไม่สำเร็จ: ' + (e.message || e), 'err'); return; }
+    if (!aoa || aoa.length < 2) { U.toast('ไฟล์ว่าง หรือไม่มีข้อมูล', 'err'); return; }
+
+    // จับหัวคอลัมน์ -> ตำแหน่ง
+    const headers = aoa[0].map(h => String(h || '').toLowerCase().trim());
+    const idx = {};
+    P_COLS.forEach(col => {
+      idx[col.key] = headers.findIndex(h => col.match.some(m => h.includes(m.toLowerCase())));
+    });
+    if (idx.name < 0) { U.toast('ไม่พบคอลัมน์ "ชื่อโครงการ" ในไฟล์', 'err'); return; }
+
+    const existing = new Set(Store.data().projects.map(p => (p.name || '').trim()));
+    let base = (Store.data().projects.reduce((m, p) => Math.max(m, p.sort || 0), 0)) + 10;
+    const rows = [], skipped = [];
+    for (let r = 1; r < aoa.length; r++) {
+      const get = k => idx[k] >= 0 ? aoa[r][idx[k]] : '';
+      const name = String(get('name') || '').trim();
+      if (!name) continue;
+      if (existing.has(name)) { skipped.push(name); continue; }
+      existing.add(name);
+      rows.push({
+        name,
+        budget: parseNum(get('budget')),
+        level: String(get('level') || '').trim() || null,
+        responsible: String(get('responsible') || '').trim() || null,
+        note: String(get('note') || '').trim() || null,
+        sort: base, active: true,
+      });
+      base += 10;
+    }
+    if (!rows.length) { U.toast(skipped.length ? `ทุกโครงการมีอยู่แล้ว (ข้าม ${skipped.length})` : 'ไม่พบข้อมูลโครงการในไฟล์', 'err'); return; }
+
+    App.confirmDialog(
+      `พบ ${rows.length} โครงการใหม่${skipped.length ? ` (ข้าม ${skipped.length} ที่มีชื่อซ้ำ)` : ''} — ยืนยันนำเข้า?`,
+      async () => {
+        try {
+          await Store.insertMany('projects', rows);
+          U.toast(`นำเข้า ${rows.length} โครงการแล้ว`); await refresh();
+        } catch (e) { U.toast('นำเข้าไม่สำเร็จ: ' + (e.message || e), 'err'); }
+      },
+      { danger: false, yes: 'นำเข้า' }
+    );
   }
 
   // ---------------- ปฏิทิน ----------------

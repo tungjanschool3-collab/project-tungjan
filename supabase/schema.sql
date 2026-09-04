@@ -49,6 +49,18 @@ create table if not exists accounts (
   active             boolean default true
 );
 
+-- ---------- 4.5) โครงการ (พร้อมงบประมาณที่ได้รับ) ----------
+create table if not exists projects (
+  id          uuid primary key default gen_random_uuid(),
+  name        text not null,        -- ชื่อโครงการ
+  budget      numeric default 0,    -- งบที่ได้รับจัดสรร
+  level       text,                 -- ระดับ (อนุบาล/ประถม/รวม/อื่นๆ)
+  responsible text,                 -- ผู้รับผิดชอบ
+  note        text,                 -- หมายเหตุ
+  sort        int default 0,
+  active      boolean default true
+);
+
 -- ---------- 5) ปฏิทิน/กิจกรรม ----------
 create table if not exists calendar_events (
   id         uuid primary key default gen_random_uuid(),
@@ -83,14 +95,19 @@ create table if not exists transactions (
   travel       boolean default false,-- ไปราชการ
   clear_status text,                 -- ล้างหนี้: cleared(เช็คล้างหนี้)/none(ไม่ทำ)/null
   teacher_id   uuid references teachers(id) on delete set null, -- ครูที่รับผิดชอบ
+  project_id   uuid references projects(id) on delete set null,  -- เชื่อมกับตาราง projects
 
   notes        text,                 -- หมายเหตุ
   created_at   timestamptz default now()
 );
 
+-- เพิ่มคอลัมน์เชื่อมโครงการ (สำหรับฐานข้อมูลที่สร้างไว้ก่อนแล้ว)
+alter table transactions add column if not exists project_id uuid references projects(id) on delete set null;
+
 create index if not exists idx_txn_date    on transactions(txn_date);
 create index if not exists idx_txn_account on transactions(account_id);
 create index if not exists idx_txn_docno    on transactions(doc_no);
+create index if not exists idx_txn_project on transactions(project_id);
 
 -- ============================================================
 --  Row Level Security
@@ -104,13 +121,14 @@ alter table school_info      enable row level security;
 alter table positions        enable row level security;
 alter table teachers         enable row level security;
 alter table accounts         enable row level security;
+alter table projects         enable row level security;
 alter table calendar_events  enable row level security;
 alter table transactions     enable row level security;
 
 do $$
 declare t text;
 begin
-  foreach t in array array['school_info','positions','teachers','accounts','calendar_events','transactions']
+  foreach t in array array['school_info','positions','teachers','accounts','projects','calendar_events','transactions']
   loop
     execute format('drop policy if exists "app_all" on %I;', t);
     execute format('create policy "app_all" on %I for all using (true) with check (true);', t);
