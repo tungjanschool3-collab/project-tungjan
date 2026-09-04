@@ -107,7 +107,7 @@
     const isNew = !t;
     const v = Object.assign({
       txn_date: U.todayISO(), doc_type: 'บจ', doc_no: Store.nextDocNo(), description: '',
-      amount_in: 0, amount_out: 0, account_id: '', bal_type: 'bank',
+      amount_in: 0, amount_out: 0, account_id: '', bal_type: 'bank', round_no: '',
       pay_debtor: 0, pay_voucher: 0, po_no: '', hire_no: '', memo_no: '', project: '',
       level: '', travel: false, clear_status: '', teacher_id: '', notes: '',
     }, t || {});
@@ -130,6 +130,7 @@
           <div class="field"><label>ที่เก็บเงิน (คงเหลือช่อง)</label><select id="f_bal"></select></div>
           <div class="field"><label>รายรับ</label><input id="f_in" type="number" step="0.01" value="${v.amount_in || 0}"></div>
           <div class="field"><label>รายจ่าย</label><input id="f_out" type="number" step="0.01" value="${v.amount_out || 0}"></div>
+          <div class="field"><label>งวดที่ (เงินอุดหนุน)</label><input id="f_round" type="number" min="1" value="${v.round_no ?? ''}" placeholder="เช่น 1, 2 (ถ้าเป็นเงินอุดหนุน)"></div>
         </div>
       </div>
 
@@ -181,6 +182,7 @@
         description: g('#f_desc').value.trim(),
         account_id: g('#f_acc').value || null, bal_type: g('#f_bal').value,
         amount_in: Number(g('#f_in').value || 0), amount_out: Number(g('#f_out').value || 0),
+        round_no: g('#f_round').value === '' ? null : Number(g('#f_round').value),
         pay_debtor: Number(g('#f_paydebt').value || 0), pay_voucher: Number(g('#f_payvou').value || 0),
         po_no: g('#f_po').value.trim() || null, hire_no: g('#f_hire').value.trim() || null,
         memo_no: g('#f_memo').value.trim() || null, project: g('#f_proj').value.trim() || null,
@@ -208,7 +210,7 @@
     const s = Store.data().school || {};
     const sheet = U.el('<div class="print-only sheet"></div>');
     sheet.appendChild(U.el(`<div class="doc-head">
-      <div class="fy">ปีงบประมาณ ${Store.getFY()}</div>
+      <div class="fy">ปีงบประมาณ ${Store.getFY()}</div><img class="doc-logo" src="assets/logo.png" alt="">
       <div class="t1">การรับ – จ่ายเงิน</div>
       <div class="t2">${U.esc(s.name || '')} ${U.esc(s.district || '')} จังหวัด${U.esc(s.province || '')}</div>
       <div class="t3">ประจำเดือน ${U.thaiMonthYear(m)}</div>

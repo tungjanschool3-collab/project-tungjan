@@ -90,6 +90,7 @@ create table if not exists transactions (
   txn_date     date not null,
   doc_type     text,                 -- ประเภทเอกสาร: บค / บจ / บย / บร
   doc_no       int,                  -- เลขที่เอกสาร (running ต่อปีงบ)
+  round_no     int,                  -- งวดที่รับเงินอุดหนุน (1..สุดท้าย)
   description  text,                 -- รายการ
   amount_in    numeric default 0,    -- รายรับ
   amount_out   numeric default 0,    -- รายจ่าย

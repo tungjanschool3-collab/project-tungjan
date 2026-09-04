@@ -39,7 +39,7 @@
     const wrap = U.el('<div class="card"><div class="sheet"></div></div>');
     const sheet = wrap.querySelector('.sheet');
     sheet.appendChild(U.el(`<div class="doc-head">
-      <div class="fy">ปีงบประมาณ ${Store.getFY()}</div>
+      <div class="fy">ปีงบประมาณ ${Store.getFY()}</div><img class="doc-logo" src="assets/logo.png" alt="">
       <div class="t1">ทะเบียนคุม ใบสั่งซื้อ / สั่งจ้าง / ไปราชการ</div>
       <div class="t2">${U.esc(s.name || '')} ${U.esc(s.district || '')} จังหวัด${U.esc(s.province || '')}</div>
       <div class="t3">ประจำเดือน ${U.thaiMonthYear(m)}</div>

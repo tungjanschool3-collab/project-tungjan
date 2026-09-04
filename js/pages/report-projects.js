@@ -88,7 +88,7 @@
   function buildPrintSheet(rows, s) {
     const sheet = U.el('<div class="print-only sheet"></div>');
     sheet.appendChild(U.el(`<div class="doc-head">
-      <div class="fy">ปีงบประมาณ ${Store.getFY()}</div>
+      <div class="fy">ปีงบประมาณ ${Store.getFY()}</div><img class="doc-logo" src="assets/logo.png" alt="">
       <div class="t1">รายงานงบโครงการ (งบที่ได้รับ / จ่ายจริง / คงเหลือ)</div>
       <div class="t2">${U.esc(s.name || '')} ${U.esc(s.district || '')} จังหวัด${U.esc(s.province || '')}</div>
     </div>`));
