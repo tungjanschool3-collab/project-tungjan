@@ -5,7 +5,7 @@
   let filterMonth = '';
 
   function rowsOf(m) {
-    return Store.data().transactions
+    return Store.txnsFY()
       .filter(t => t.doc_type && (!m || U.ymOf(t.txn_date) === m))
       .sort((a, b) => (a.doc_no || 0) - (b.doc_no || 0) || (a.txn_date < b.txn_date ? -1 : 1));
   }
@@ -37,9 +37,9 @@
   function buildSheet(rows, m, s) {
     const wrap = U.el('<div class="card"><div class="sheet"></div></div>');
     const sheet = wrap.querySelector('.sheet');
-    const fy = String((s.fiscal_year || '')).slice(-2);
+    const fy = String((Store.getFY())).slice(-2);
     sheet.appendChild(U.el(`<div class="doc-head">
-      <div class="fy">ปีงบประมาณ ${s.fiscal_year || ''}</div>
+      <div class="fy">ปีงบประมาณ ${Store.getFY()}</div>
       <div class="t1">ทะเบียนคุม บค./บจ./บย./บร.</div>
       <div class="t2">${U.esc(s.name || '')} ${U.esc(s.district || '')} จังหวัด${U.esc(s.province || '')}</div>
       <div class="t3">ประจำเดือน ${U.thaiMonthYear(m)}</div>
@@ -73,9 +73,9 @@
   }
 
   function aoaOf(rows, m, s) {
-    const fy = String((s.fiscal_year || '')).slice(-2);
+    const fy = String((Store.getFY())).slice(-2);
     const aoa = [
-      [`ทะเบียนคุม บค./บจ./บย./บร.  ${s.name || ''}  ปีงบประมาณ ${s.fiscal_year || ''}`],
+      [`ทะเบียนคุม บค./บจ./บย./บร.  ${s.name || ''}  ปีงบประมาณ ${Store.getFY()}`],
       [`ประจำเดือน ${U.thaiMonthYear(m)}`], [],
       ['วัน เดือน ปี', 'บค./บจ./บย./บร.', `.../${fy}`, 'รายการ', 'จำนวนเงิน', 'บัญชี', 'หมายเหตุ'],
     ];
@@ -97,7 +97,7 @@
   }
   function exportAll() {
     const s = Store.data().school || {};
-    const months = Array.from(new Set(Store.data().transactions.filter(t => t.doc_type).map(t => U.ymOf(t.txn_date)))).sort();
+    const months = Array.from(new Set(Store.txnsFY().filter(t => t.doc_type).map(t => U.ymOf(t.txn_date)))).sort();
     if (!months.length) { U.toast('ยังไม่มีข้อมูล', 'err'); return; }
     Exporter.downloadMulti(`ทะเบียนคุม_บคบจบยบร_ทั้งปี.xlsx`,
       months.map(m => ({ name: U.thaiMonthYear(m), aoa: aoaOf(rowsOf(m), m, s), opts: { cols: [14, 12, 8, 42, 14, 18, 16], numCols: [4], merges: ['A1:G1', 'A2:G2'] } })));

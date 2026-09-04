@@ -90,7 +90,17 @@ window.App = (function () {
     // topbar
     U.$('#pageTitle').textContent = page.title || '';
     U.$('#pageSub').textContent = (typeof page.subtitle === 'function' ? page.subtitle() : page.subtitle) || (school.name || '');
-    U.$('#yearBadge').textContent = 'ปีงบประมาณ ' + (school.fiscal_year || '—');
+    // ตัวเลือกปีงบประมาณ
+    const badge = U.$('#yearBadge');
+    badge.innerHTML = '';
+    if (Store.isConfigured()) {
+      const sel = U.el('<select id="fySelect" title="เลือกปีงบประมาณ">');
+      Store.fyList().forEach(fy => sel.appendChild(U.el(`<option value="${fy}" ${fy === Store.getFY() ? 'selected' : ''}>ปีงบประมาณ ${fy}</option>`)));
+      sel.onchange = () => { Store.setFY(sel.value); go(current); };
+      badge.appendChild(sel);
+    } else {
+      badge.textContent = 'ปีงบประมาณ —';
+    }
     // config warning
     const banner = U.$('#configBanner');
     banner.style.display = Store.isConfigured() ? 'none' : 'block';
@@ -182,9 +192,12 @@ window.App = (function () {
 
   // ---------------- helper: ตัวเลือกเดือน ----------------
   function monthOptions() {
-    const set = new Set(Store.data().transactions.map(t => U.ymOf(t.txn_date)).filter(Boolean));
-    // เพิ่มเดือนปัจจุบันเสมอ
-    set.add(U.ymOf(U.todayISO()));
+    const fy = Store.getFY();
+    const set = new Set(Store.txnsFY(fy).map(t => U.ymOf(t.txn_date)).filter(Boolean));
+    // ถ้าปีงบที่เลือก = ปีงบปัจจุบันตามปฏิทิน ให้มีเดือนปัจจุบันด้วย
+    if (U.fiscalYearOf(U.todayISO()) === fy) set.add(U.ymOf(U.todayISO()));
+    // อย่างน้อยต้องมี 1 เดือน (เดือนแรกของปีงบ = ต.ค. ปีก่อน)
+    if (!set.size) set.add((fy - 543 - 1) + '-10');
     return Array.from(set).sort().reverse();
   }
 

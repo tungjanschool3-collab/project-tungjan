@@ -8,6 +8,7 @@
     { k: 'staff', label: '👩‍🏫 ครู & ตำแหน่ง' },
     { k: 'accounts', label: '📒 บัญชี & ยอดยกมา' },
     { k: 'projects', label: '📁 โครงการ' },
+    { k: 'fiscalyears', label: '🗓️ ปีงบประมาณ' },
     { k: 'calendar', label: '📅 ปฏิทิน' },
   ];
 
@@ -30,6 +31,7 @@
     if (tab === 'staff') renderStaff(body, D);
     if (tab === 'accounts') renderAccounts(body, D);
     if (tab === 'projects') renderProjects(body, D);
+    if (tab === 'fiscalyears') renderFiscalYears(body, D);
     if (tab === 'calendar') renderCalendar(body, D);
   }
 
@@ -210,10 +212,11 @@
   }
 
   function renderProjects(c, D) {
+    const projects = Store.projectsFY();  // เฉพาะปีงบที่เลือก
     // แถบเครื่องมือ
     const bar = U.el(`<div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-        <div><h3>โครงการ &amp; กิจกรรมย่อย</h3><div class="sub">แต่ละโครงการมีงบประมาณรวม แตกเป็นกิจกรรมย่อย (งบย่อย/ระดับ/ผู้รับผิดชอบ) — นำเข้า/ส่งออก CSV ได้</div></div>
+        <div><h3>โครงการ &amp; กิจกรรมย่อย <span class="sub" style="font-weight:400">(ปีงบ ${Store.getFY()})</span></h3><div class="sub">แต่ละโครงการมีงบประมาณรวม แตกเป็นกิจกรรมย่อย (งบย่อย/ระดับ/ผู้รับผิดชอบ) — นำเข้า/ส่งออก CSV ได้</div></div>
         <div class="btn-row" style="flex-wrap:wrap">
           <button class="btn primary sm" id="addProj">+ เพิ่มโครงการ</button>
           <button class="btn excel sm" id="expProj">⬇️ ส่งออก CSV</button>
@@ -231,12 +234,12 @@
     fileInput.onchange = () => { if (fileInput.files[0]) importProjectsFile(fileInput.files[0]); fileInput.value = ''; };
     c.appendChild(bar);
 
-    if (!D.projects.length) {
-      c.appendChild(U.el('<div class="card"><div class="empty">ยังไม่มีโครงการ — กด “+ เพิ่มโครงการ” หรือ “นำเข้า CSV/Excel”</div></div>'));
+    if (!projects.length) {
+      c.appendChild(U.el(`<div class="card"><div class="empty">ยังไม่มีโครงการในปีงบ ${Store.getFY()} — กด “+ เพิ่มโครงการ” หรือ “นำเข้า CSV/Excel”</div></div>`));
       return;
     }
 
-    D.projects.forEach(p => {
+    projects.forEach(p => {
       const list = actsOf(p.id);
       const subTotal = list.reduce((s, a) => s + Number(a.budget || 0), 0);
       const net = netBudget(p);
@@ -278,8 +281,8 @@
       c.appendChild(card);
     });
 
-    const gBudget = D.projects.reduce((s, p) => s + netBudget(p), 0);
-    c.appendChild(U.el(`<div class="card" style="font-weight:700;background:#f7f9fe">รวมงบประมาณสุทธิทุกโครงการ (${D.projects.length} โครงการ): ${U.money(gBudget)}</div>`));
+    const gBudget = projects.reduce((s, p) => s + netBudget(p), 0);
+    c.appendChild(U.el(`<div class="card" style="font-weight:700;background:#f7f9fe">รวมงบประมาณสุทธิทุกโครงการ (${projects.length} โครงการ): ${U.money(gBudget)}</div>`));
   }
 
   function editProject(p) {
@@ -295,7 +298,7 @@
       values: p || { budget: 0, budget_adjust: 0 },
       onSubmit: async (v) => {
         if (p) { await Store.update('projects', p.id, v); }
-        else { v.sort = (Store.data().projects.length + 1) * 10; v.active = true; await Store.insert('projects', v); }
+        else { v.sort = (Store.projectsFY().length + 1) * 10; v.active = true; v.fiscal_year = Store.getFY(); await Store.insert('projects', v); }
         U.toast('บันทึกโครงการแล้ว'); await refresh();
       },
     });
@@ -341,10 +344,10 @@
     setTimeout(() => URL.revokeObjectURL(url), 1500);
   }
   function exportProjectsCSV() {
-    const D = Store.data();
-    if (!D.projects.length) { U.toast('ยังไม่มีโครงการให้ส่งออก', 'err'); return; }
+    const projects = Store.projectsFY();
+    if (!projects.length) { U.toast('ยังไม่มีโครงการให้ส่งออก', 'err'); return; }
     const rows = [PROJ_COLS.map(c => c.header)];
-    D.projects.forEach(p => {
+    projects.forEach(p => {
       const list = actsOf(p.id);
       if (!list.length) rows.push([p.name || '', Number(p.budget || 0), '', '', '', '']);
       else list.forEach(a => rows.push([p.name || '', Number(p.budget || 0), a.name || '', Number(a.budget || 0), a.level || '', a.responsible || '']));
@@ -397,9 +400,11 @@
       async () => {
         try {
           const D = Store.data();
+          const fy = Store.getFY();
           const byName = {};
-          D.projects.forEach(p => byName[(p.name || '').trim()] = p);
-          const toCreate = order.filter(n => !byName[n]).map((n, i) => ({ name: n, budget: groups[n].total, sort: (D.projects.length + i + 1) * 10, active: true }));
+          Store.projectsFY(fy).forEach(p => byName[(p.name || '').trim()] = p);  // จับคู่ชื่อซ้ำเฉพาะปีงบนี้
+          const baseSort = Store.projectsFY(fy).length;
+          const toCreate = order.filter(n => !byName[n]).map((n, i) => ({ name: n, budget: groups[n].total, fiscal_year: fy, sort: (baseSort + i + 1) * 10, active: true }));
           let created = [];
           if (toCreate.length) created = await Store.insertMany('projects', toCreate);
           created.forEach(p => byName[(p.name || '').trim()] = p);
@@ -420,6 +425,75 @@
         } catch (e) { U.toast('นำเข้าไม่สำเร็จ: ' + (e.message || e), 'err'); }
       },
       { danger: false, yes: 'นำเข้า' }
+    );
+  }
+
+  // ---------------- จัดการปีงบประมาณ ----------------
+  function renderFiscalYears(c, D) {
+    const fys = Store.fyList();        // มาก → น้อย
+    const cur = Store.getFY();
+    const KEEP = 5;
+
+    const startCard = U.el(`<div class="card">
+      <h3>ปีงบประมาณ</h3>
+      <div class="sub">แยกข้อมูลรายการรับ-จ่ายและโครงการตามปีงบ (ต.ค.–ก.ย.) — เก็บไว้ประมาณ ${KEEP} ปี พอเกินก็ลบปีเก่าทิ้งได้ · เริ่มปี ${Store.START_FY}</div>
+      <div class="btn-row" style="margin-top:12px;align-items:flex-end">
+        <div class="field" style="max-width:200px"><label>เปิด/เริ่มปีงบ (พ.ศ.)</label><input id="newFY" type="number" value="${cur}"></div>
+        <button class="btn primary" id="goFY">เปิดปีงบนี้</button>
+      </div>
+      <div class="hint" style="margin-top:6px">พิมพ์ปีใหม่ (เช่น ${cur + 1}) แล้วกด “เปิดปีงบนี้” เพื่อเริ่มบันทึกข้อมูลปีถัดไป</div>
+    </div>`);
+    startCard.querySelector('#goFY').onclick = () => {
+      const v = Number(startCard.querySelector('#newFY').value || 0);
+      if (v < 2500 || v > 2700) { U.toast('กรุณาใส่ปี พ.ศ. ให้ถูกต้อง', 'err'); return; }
+      Store.setFY(v); U.toast('เปิดปีงบ ' + v + ' แล้ว'); App.go('settings');
+    };
+    c.appendChild(startCard);
+
+    const card = U.el(`<div class="card">
+      <h3>ข้อมูลแยกตามปีงบ</h3>
+      <div class="sub">ปีที่เกิน ${KEEP} ปีล่าสุดจะขึ้น “เก่า (ลบได้)” — ลบเพื่อล้างข้อมูลเก่าออก</div>
+      <div class="table-wrap"><table class="data">
+      <thead><tr><th>ปีงบ (พ.ศ.)</th><th class="num">รายการรับ-จ่าย</th><th class="num">โครงการ</th><th>สถานะ</th><th style="width:130px"></th></tr></thead>
+      <tbody id="fyBody"></tbody></table></div>
+    </div>`);
+    const tb = card.querySelector('#fyBody');
+    fys.forEach((fy, i) => {
+      const txnN = Store.txnsFY(fy).length;
+      const projN = Store.projectsFY(fy).length;
+      const isCur = fy === cur;
+      const isOld = i >= KEEP;
+      const status = isCur ? '<span class="pill" style="background:var(--brand-soft);color:var(--brand-d)">กำลังใช้งาน</span>'
+        : isOld ? '<span class="pill" style="background:#fdecea;color:#c0392b">เก่า (ลบได้)</span>'
+          : '<span class="pill" style="background:#eef7ee;color:#2e7d32">เก็บไว้</span>';
+      const tr = U.el(`<tr>
+        <td><b>${fy}</b></td>
+        <td class="num">${txnN}</td>
+        <td class="num">${projN}</td>
+        <td>${status}</td>
+        <td><button class="btn danger sm delFY">🗑️ ลบปีนี้</button></td></tr>`);
+      tr.querySelector('.delFY').onclick = () => confirmDeleteFY(fy, txnN, projN);
+      tb.appendChild(tr);
+    });
+    if (!fys.length) tb.appendChild(U.el('<tr><td colspan="5"><div class="empty">ยังไม่มีข้อมูล</div></td></tr>'));
+    c.appendChild(card);
+  }
+
+  function confirmDeleteFY(fy, txnN, projN) {
+    App.confirmDialog(
+      `ลบข้อมูลปีงบ ${fy} ทั้งหมด? — จะลบรายการรับ-จ่าย ${txnN} รายการ และโครงการ ${projN} โครงการ (พร้อมกิจกรรมย่อย) อย่างถาวร กู้คืนไม่ได้`,
+      async () => {
+        try {
+          await Store.deleteFY(fy);
+          await Store.loadAll();
+          if (Store.getFY() === fy) {
+            const remaining = Store.fyList().filter(y => y !== fy);
+            Store.setFY(remaining[0] || Store.START_FY);
+          }
+          U.toast(`ลบข้อมูลปีงบ ${fy} แล้ว`); App.go('settings');
+        } catch (e) { U.toast('ลบไม่สำเร็จ: ' + (e.message || e), 'err'); }
+      },
+      { danger: true, yes: 'ลบปีงบนี้' }
     );
   }
 

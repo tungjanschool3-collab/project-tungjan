@@ -5,7 +5,7 @@
   function accountBalance(a) {
     const open = Number(a.opening_cash || 0) + Number(a.opening_bank || 0) + Number(a.opening_govdeposit || 0);
     let bal = open;
-    Store.data().transactions.forEach(t => {
+    Store.txnsFY().forEach(t => {
       if (t.account_id === a.id) bal += Number(t.amount_in || 0) - Number(t.amount_out || 0);
     });
     return bal;
@@ -14,7 +14,7 @@
   function render(c) {
     const D = Store.data();
     const thisMonth = U.ymOf(U.todayISO());
-    const mTx = D.transactions.filter(t => U.ymOf(t.txn_date) === thisMonth);
+    const mTx = Store.txnsFY().filter(t => U.ymOf(t.txn_date) === thisMonth);
     const mIn = mTx.reduce((s, t) => s + Number(t.amount_in || 0), 0);
     const mOut = mTx.reduce((s, t) => s + Number(t.amount_out || 0), 0);
     const grand = D.accounts.reduce((s, a) => s + accountBalance(a), 0);
@@ -40,7 +40,7 @@
 
     // ----- ตารางยอดคงเหลือ -----
     const card = U.el(`<div class="card"><h3>ยอดคงเหลือแยกบัญชี</h3>
-      <div class="sub">ยอดยกมา + รับ − จ่าย (คำนวณจากรายการทั้งหมด)</div>
+      <div class="sub">ยอดยกมา + รับ − จ่าย (เฉพาะปีงบที่เลือก)</div>
       <div class="table-wrap"><table class="data"><thead><tr>
       <th>บัญชี</th><th>ประเภท</th><th class="num">ยอดยกมา</th><th class="num">รับสะสม</th><th class="num">จ่ายสะสม</th><th class="num">คงเหลือ</th>
       </tr></thead><tbody></tbody></table></div></div>`);
@@ -48,7 +48,7 @@
     if (!D.accounts.length) tb.appendChild(U.el('<tr><td colspan="6"><div class="empty">ยังไม่มีบัญชี — เพิ่มได้ที่ “ข้อมูลหลัก”</div></td></tr>'));
     D.accounts.forEach(a => {
       const open = Number(a.opening_cash || 0) + Number(a.opening_bank || 0) + Number(a.opening_govdeposit || 0);
-      const tx = D.transactions.filter(t => t.account_id === a.id);
+      const tx = Store.txnsFY().filter(t => t.account_id === a.id);
       const inn = tx.reduce((s, t) => s + Number(t.amount_in || 0), 0);
       const out = tx.reduce((s, t) => s + Number(t.amount_out || 0), 0);
       const tr = U.el(`<tr>

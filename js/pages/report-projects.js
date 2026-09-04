@@ -14,9 +14,8 @@
   }
 
   function computeRows() {
-    const D = Store.data();
-    const txns = D.transactions;
-    return D.projects.map((p, i) => {
+    const txns = Store.txnsFY();
+    return Store.projectsFY().map((p, i) => {
       const budget = Number(p.budget || 0) + Number(p.budget_adjust || 0); // งบสุทธิ = รวม + เพิ่ม/ปรับ
       const spent = spentOf(p, txns);
       return { no: i + 1, p, budget, spent, remain: budget - spent };
@@ -89,7 +88,7 @@
   function buildPrintSheet(rows, s) {
     const sheet = U.el('<div class="print-only sheet"></div>');
     sheet.appendChild(U.el(`<div class="doc-head">
-      <div class="fy">ปีงบประมาณ ${s.fiscal_year || ''}</div>
+      <div class="fy">ปีงบประมาณ ${Store.getFY()}</div>
       <div class="t1">รายงานงบโครงการ (งบที่ได้รับ / จ่ายจริง / คงเหลือ)</div>
       <div class="t2">${U.esc(s.name || '')} ${U.esc(s.district || '')} จังหวัด${U.esc(s.province || '')}</div>
     </div>`));
@@ -119,7 +118,7 @@
   // ----- ส่งออก Excel -----
   function exportExcel(rows, s) {
     const aoa = [
-      [`รายงานงบโครงการ  ${s.name || ''}  ปีงบประมาณ ${s.fiscal_year || ''}`],
+      [`รายงานงบโครงการ  ${s.name || ''}  ปีงบประมาณ ${Store.getFY()}`],
       [],
       ['ที่', 'โครงการ', 'งบสุทธิ', 'จ่ายจริง', 'คงเหลือ'],
     ];

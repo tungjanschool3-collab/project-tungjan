@@ -53,6 +53,7 @@ create table if not exists accounts (
 create table if not exists projects (
   id            uuid primary key default gen_random_uuid(),
   name          text not null,        -- ชื่อโครงการ
+  fiscal_year   int default 2569,     -- ปีงบประมาณ (พ.ศ.)
   budget        numeric default 0,    -- งบประมาณรวมที่ได้รับจัดสรร
   budget_adjust numeric default 0,    -- เงินเพิ่ม/ปรับงบ (กรณีเกิน/เหลือ, + หรือ -)
   level         text,                 -- (สำรอง) ระดับรวมของโครงการ

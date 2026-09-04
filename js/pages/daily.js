@@ -16,7 +16,7 @@
   let filterMonth = '';
 
   function txnsOfMonth(m) {
-    return Store.data().transactions
+    return Store.txnsFY()
       .filter(t => !m || U.ymOf(t.txn_date) === m)
       .sort((a, b) => (a.txn_date < b.txn_date ? -1 : a.txn_date > b.txn_date ? 1 : (a.doc_no || 0) - (b.doc_no || 0)));
   }
@@ -208,7 +208,7 @@
     const s = Store.data().school || {};
     const sheet = U.el('<div class="print-only sheet"></div>');
     sheet.appendChild(U.el(`<div class="doc-head">
-      <div class="fy">ปีงบประมาณ ${s.fiscal_year || ''}</div>
+      <div class="fy">ปีงบประมาณ ${Store.getFY()}</div>
       <div class="t1">การรับ – จ่ายเงิน</div>
       <div class="t2">${U.esc(s.name || '')} ${U.esc(s.district || '')} จังหวัด${U.esc(s.province || '')}</div>
       <div class="t3">ประจำเดือน ${U.thaiMonthYear(m)}</div>
@@ -242,7 +242,7 @@
     const rows = txnsOfMonth(filterMonth);
     const s = Store.data().school || {};
     const aoa = [
-      [`การรับ – จ่ายเงิน  ${s.name || ''}  ปีงบประมาณ ${s.fiscal_year || ''}`],
+      [`การรับ – จ่ายเงิน  ${s.name || ''}  ปีงบประมาณ ${Store.getFY()}`],
       [`ประจำเดือน ${U.thaiMonthYear(filterMonth)}`],
       [],
       ['วัน เดือน ปี', 'ที่', 'ประเภท', 'เลขที่', 'รายการ', 'รายจ่าย', 'รายรับ', 'บัญชี'],

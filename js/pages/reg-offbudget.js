@@ -13,7 +13,7 @@
 
   // รายการของบัญชี เรียงตามวันที่/เลขที่
   function accTxns(id) {
-    return Store.data().transactions
+    return Store.txnsFY()
       .filter(t => t.account_id === id)
       .sort((a, b) => (a.txn_date < b.txn_date ? -1 : a.txn_date > b.txn_date ? 1 : (a.doc_no || 0) - (b.doc_no || 0)));
   }
@@ -95,7 +95,7 @@
     const wrap = U.el('<div class="card"><div class="sheet"></div></div>');
     const sheet = wrap.querySelector('.sheet');
     sheet.appendChild(U.el(`<div class="doc-head">
-      <div class="fy">ปีงบประมาณ ${s.fiscal_year || ''}</div>
+      <div class="fy">ปีงบประมาณ ${Store.getFY()}</div>
       <div class="t1">ทะเบียนคุมเงินนอกงบประมาณ</div>
       <div class="t2">ประเภทเงิน: ${U.esc(acc.name)}&nbsp;&nbsp;${U.esc(s.name || '')} ${U.esc(s.office || '')}</div>
       <div class="t3">ประจำเดือน ${U.thaiMonthYear(m)}</div>
@@ -156,7 +156,7 @@
     const data = computeMonth(acc, m);
     const aoa = [
       [`ทะเบียนคุมเงินนอกงบประมาณ  ประเภท: ${acc.name}`],
-      [`${s.name || ''} ${s.office || ''}  ปีงบประมาณ ${s.fiscal_year || ''}  ประจำเดือน ${U.thaiMonthYear(m)}`],
+      [`${s.name || ''} ${s.office || ''}  ปีงบประมาณ ${Store.getFY()}  ประจำเดือน ${U.thaiMonthYear(m)}`],
       [],
       ['วัน เดือน ปี', 'ที่', 'รายการ', 'รับ', 'จ่าย-ลูกหนี้', 'จ่าย-ใบสำคัญ', 'คงเหลือ-เงินสด', 'คงเหลือ-ธนาคาร', 'คงเหลือ-ส่วนราชการ', 'หมายเหตุ'],
       [`ยอดยกมา ${U.thaiMonthYear(m)}`, '', '', '', '', '', data.start.b.cash, data.start.b.bank, data.start.b.gov, ''],

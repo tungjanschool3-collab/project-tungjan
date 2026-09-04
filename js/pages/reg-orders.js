@@ -6,7 +6,7 @@
   const isOrder = t => t.po_no || t.hire_no || t.travel || t.project || t.memo_no;
 
   function rowsOf(m) {
-    return Store.data().transactions
+    return Store.txnsFY()
       .filter(t => isOrder(t) && (!m || U.ymOf(t.txn_date) === m))
       .sort((a, b) => (a.txn_date < b.txn_date ? -1 : a.txn_date > b.txn_date ? 1 : (a.doc_no || 0) - (b.doc_no || 0)));
   }
@@ -39,7 +39,7 @@
     const wrap = U.el('<div class="card"><div class="sheet"></div></div>');
     const sheet = wrap.querySelector('.sheet');
     sheet.appendChild(U.el(`<div class="doc-head">
-      <div class="fy">ปีงบประมาณ ${s.fiscal_year || ''}</div>
+      <div class="fy">ปีงบประมาณ ${Store.getFY()}</div>
       <div class="t1">ทะเบียนคุม ใบสั่งซื้อ / สั่งจ้าง / ไปราชการ</div>
       <div class="t2">${U.esc(s.name || '')} ${U.esc(s.district || '')} จังหวัด${U.esc(s.province || '')}</div>
       <div class="t3">ประจำเดือน ${U.thaiMonthYear(m)}</div>
@@ -76,7 +76,7 @@
 
   function aoaOf(rows, m, s) {
     const aoa = [
-      [`ทะเบียนคุม ใบสั่งซื้อ/สั่งจ้าง/ไปราชการ  ${s.name || ''}  ปีงบประมาณ ${s.fiscal_year || ''}`],
+      [`ทะเบียนคุม ใบสั่งซื้อ/สั่งจ้าง/ไปราชการ  ${s.name || ''}  ปีงบประมาณ ${Store.getFY()}`],
       [`ประจำเดือน ${U.thaiMonthYear(m)}`], [],
       ['วัน เดือน ปี', 'ใบสั่งซื้อ', 'ใบสั่งจ้าง', 'เลขบันทึกข้อความ', 'โครงการ', 'ระดับ', 'เช็คล้างหนี้', 'ไม่ทำ', 'ครูที่รับผิดชอบ'],
     ];
@@ -98,7 +98,7 @@
   }
   function exportAll() {
     const s = Store.data().school || {};
-    const months = Array.from(new Set(Store.data().transactions.filter(isOrder).map(t => U.ymOf(t.txn_date)))).sort();
+    const months = Array.from(new Set(Store.txnsFY().filter(isOrder).map(t => U.ymOf(t.txn_date)))).sort();
     if (!months.length) { U.toast('ยังไม่มีข้อมูล', 'err'); return; }
     Exporter.downloadMulti(`ทะเบียนใบสั่งซื้อสั่งจ้าง_ทั้งปี.xlsx`,
       months.map(m => ({ name: U.thaiMonthYear(m), aoa: aoaOf(rowsOf(m), m, s), opts: opts() })));
