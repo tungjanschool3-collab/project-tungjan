@@ -114,6 +114,10 @@
 
     const accOpts = [{ value: '', label: '— เลือกบัญชี —' }].concat(D.accounts.filter(a => a.active !== false).map(a => ({ value: a.id, label: a.name })));
     const teacherOpts = [{ value: '', label: '— ไม่ระบุ —' }].concat(D.teachers.map(x => ({ value: x.id, label: x.name })));
+    const activityPrefix = '[กิจกรรม] ';
+    const noteLines = String(v.notes || '').split('\n');
+    const existingActivity = noteLines.find(x => x.startsWith(activityPrefix))?.slice(activityPrefix.length) || '';
+    const cleanNotes = noteLines.filter(x => !x.startsWith(activityPrefix)).join('\n');
 
     const body = U.el('<div></div>');
     body.innerHTML = `
@@ -149,13 +153,14 @@
           <div class="field"><label>เลขใบสั่งซื้อ</label><input id="f_po" value="${U.esc(v.po_no||'')}"></div>
           <div class="field"><label>เลขใบสั่งจ้าง</label><input id="f_hire" value="${U.esc(v.hire_no||'')}"></div>
           <div class="field"><label>เลขบันทึกข้อความ</label><input id="f_memo" value="${U.esc(v.memo_no||'')}"></div>
-          <div class="field" style="grid-column:span 2"><label>โครงการ</label><input id="f_proj" list="projOptions" value="${U.esc(v.project||'')}" placeholder="พิมพ์ หรือเลือกจากรายการโครงการ"><datalist id="projOptions"></datalist></div>
+          <div class="field"><label>โครงการ</label><select id="f_proj"><option value="">— เลือกโครงการ —</option></select></div>
+          <div class="field"><label>กิจกรรม</label><select id="f_activity"><option value="">— เลือกกิจกรรม —</option></select></div>
           <div class="field"><label>ระดับ</label><input id="f_level" value="${U.esc(v.level||'')}" placeholder="อนุบาล/ประถม"></div>
           <div class="field"><label>ล้างหนี้</label><select id="f_clear"></select></div>
           <div class="field"><label>ครูที่รับผิดชอบ</label><select id="f_teacher"></select></div>
           <div class="field" style="display:flex;flex-direction:row;align-items:center;gap:8px;margin-top:22px"><input id="f_travel" type="checkbox" style="width:20px;height:20px" ${v.travel?'checked':''}><label style="margin:0">เป็นรายการไปราชการ</label></div>
         </div>
-        <div class="field" style="margin-top:10px"><label>หมายเหตุ</label><input id="f_notes" value="${U.esc(v.notes||'')}"></div>
+        <div class="field" style="margin-top:10px"><label>หมายเหตุ</label><input id="f_notes" value="${U.esc(cleanNotes)}"></div>
       </details>`;
 
     // เติม select
@@ -166,9 +171,18 @@
     sel('#f_clear', [{ value: '', label: '—' }, { value: 'cleared', label: 'เช็คล้างหนี้' }, { value: 'none', label: 'ไม่ทำ' }], v.clear_status || '');
     sel('#f_teacher', teacherOpts, v.teacher_id);
 
-    // เติมรายการโครงการให้ช่อง datalist (เลือกได้ หรือพิมพ์เอง)
-    const projDL = body.querySelector('#projOptions');
-    D.projects.forEach(p => projDL.appendChild(U.el(`<option value="${U.esc(p.name)}"></option>`)));
+    // เลือกโครงการและกรองกิจกรรมตามโครงการ
+    const projectSel = body.querySelector('#f_proj');
+    D.projects.filter(p => p.active !== false).forEach(p => projectSel.appendChild(U.el(`<option value="${U.esc(p.id)}" ${p.id === v.project_id ? 'selected' : ''}>${U.esc(p.name)}</option>`)));
+    const activitySel = body.querySelector('#f_activity');
+    const updateActivities = () => {
+      const p = Store.projectById(projectSel.value);
+      const names = (D.projectActivities || []).filter(a => a.project_id === projectSel.value).map(a => a.name);
+      if (p && String(p.note || '').startsWith('[PROJECT_REPORT]')) { try { const n = JSON.parse(String(p.note).slice(16)).activity; if (n) names.push(n); } catch (e) {} }
+      activitySel.innerHTML = '<option value="">— เลือกกิจกรรม —</option>';
+      [...new Set(names.filter(Boolean))].forEach(name => activitySel.appendChild(U.el(`<option value="${U.esc(name)}" ${name === existingActivity ? 'selected' : ''}>${U.esc(name)}</option>`)));
+    };
+    projectSel.onchange = updateActivities; updateActivities();
 
     const foot = U.el('<div class="btn-row"></div>');
     const cancel = U.el('<button class="btn ghost">ยกเลิก</button>');
@@ -177,6 +191,8 @@
     cancel.onclick = App.closeModal;
     const saveEntry = async keepOpen => {
       const g = id => body.querySelector(id);
+      const selectedProject = Store.projectById(g('#f_proj').value);
+      const activityName = g('#f_activity').value;
       const payload = {
         txn_date: g('#f_date').value, doc_type: g('#f_doctype').value || null,
         doc_no: g('#f_docno').value === '' ? null : Number(g('#f_docno').value),
@@ -186,11 +202,11 @@
         round_no: g('#f_round').value === '' ? null : Number(g('#f_round').value),
         pay_debtor: Number(g('#f_paydebt').value || 0), pay_voucher: Number(g('#f_payvou').value || 0),
         po_no: g('#f_po').value.trim() || null, hire_no: g('#f_hire').value.trim() || null,
-        memo_no: g('#f_memo').value.trim() || null, project: g('#f_proj').value.trim() || null,
-        project_id: (Store.projectByName(g('#f_proj').value.trim()) || {}).id || null,
+        memo_no: g('#f_memo').value.trim() || null, project: selectedProject ? selectedProject.name : null,
+        project_id: selectedProject ? selectedProject.id : null,
         level: g('#f_level').value.trim() || null, travel: g('#f_travel').checked,
         clear_status: g('#f_clear').value || null, teacher_id: g('#f_teacher').value || null,
-        notes: g('#f_notes').value.trim() || null,
+        notes: ((activityName ? activityPrefix + activityName + '\n' : '') + g('#f_notes').value.trim()).trim() || null,
       };
       if (!payload.txn_date) { U.toast('กรุณาเลือกวันที่', 'err'); return; }
       if (!payload.description) { U.toast('กรุณากรอกรายการ', 'err'); return; }
