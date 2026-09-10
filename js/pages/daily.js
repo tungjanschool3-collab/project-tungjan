@@ -38,7 +38,14 @@
     months.forEach(m => mSel.appendChild(U.el(`<option value="${m}" ${m === filterMonth ? 'selected' : ''}>${U.thaiMonthYear(m)}</option>`)));
     mSel.onchange = () => { filterMonth = mSel.value; App.go('daily'); };
     tools.querySelector('#addBtn').onclick = () => openEditor(null);
-    tools.querySelector('#printBtn').onclick = () => window.print();
+    tools.querySelector('#printBtn').onclick = () => {
+      const pageStyle = document.createElement('style');
+      pageStyle.id = 'dailyPortraitPrint';
+      pageStyle.textContent = '@page { size: A4 portrait; margin: 10mm; }';
+      document.head.appendChild(pageStyle);
+      window.addEventListener('afterprint', () => pageStyle.remove(), { once: true });
+      window.print();
+    };
     tools.querySelector('#xlsBtn').onclick = exportExcel;
     c.appendChild(tools);
 
