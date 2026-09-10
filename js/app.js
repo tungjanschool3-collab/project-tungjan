@@ -118,7 +118,12 @@ window.App = (function () {
   function openModal(title, bodyNode, footNode, opts = {}) {
     const back = U.$('#modalBack');
     const box = U.$('#modalBox');
-    box.style.width = opts.width || '';
+    const fullscreen = opts.fullscreen || title === 'เพิ่มรายการรับ–จ่าย' || title === 'แก้ไขรายการ';
+    box.style.width = fullscreen ? '100vw' : (opts.width || '');
+    box.style.maxWidth = fullscreen ? '100vw' : '';
+    box.style.height = fullscreen ? '100dvh' : '';
+    box.style.maxHeight = fullscreen ? '100dvh' : '';
+    box.style.borderRadius = fullscreen ? '0' : '';
     U.$('#modalTitle').textContent = title;
     const body = U.$('#modalBody'); body.innerHTML = ''; body.appendChild(bodyNode);
     const foot = U.$('#modalFoot'); foot.innerHTML = '';
