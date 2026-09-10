@@ -97,6 +97,19 @@
     return line ? line.slice('[กิจกรรม] '.length).trim() : '';
   }
 
+  function itemText(t) {
+    const activity = activityName(t);
+    return String(t.description || '') + (activity ? ` — ${activity}` : '');
+  }
+
+  function plainNotes(t) {
+    return String(t.notes || '').split('\n').filter(x => !x.startsWith('[กิจกรรม] ')).join('\n');
+  }
+
+  function docNo(t, type) {
+    return t.doc_type === type ? (t.doc_no ?? '') : '';
+  }
+
   function activityTotals(acc, m) {
     const grouped = new Map();
     accTxns(acc.id).filter(t => U.ymOf(t.txn_date) === m).forEach(t => {
@@ -153,16 +166,18 @@
       <div class="t2">ประเภทเงิน: ${U.esc(acc.name)}&nbsp;&nbsp;${U.esc(s.name || '')} ${U.esc(s.office || '')}</div>
       <div class="t3">ประจำเดือน ${U.thaiMonthYear(m)}</div>
     </div>`));
-    const table = U.el(`<table class="reg"><thead>
-      <tr><th rowspan="2" style="width:9%">วัน เดือน ปี</th><th rowspan="2" style="width:5%">ที่</th>
-      <th rowspan="2">รายการ</th><th rowspan="2" style="width:9%">รับ</th>
+    const table = U.el(`<table class="reg offbudget-reg"><thead>
+      <tr><th rowspan="2" style="width:8%">วัน เดือน ปี</th>
+      <th rowspan="2" style="width:3.5%">บค</th><th rowspan="2" style="width:3.5%">บจ</th>
+      <th rowspan="2" style="width:3.5%">บร</th><th rowspan="2" style="width:3.5%">บย</th>
+      <th rowspan="2">รายการ / กิจกรรม</th><th rowspan="2" style="width:8%">รับ</th>
       <th colspan="2">จ่าย</th><th colspan="3">คงเหลือ</th><th rowspan="2" style="width:8%">หมายเหตุ</th></tr>
-      <tr><th style="width:8%">ลูกหนี้</th><th style="width:8%">ใบสำคัญ</th>
-      <th style="width:8%">เงินสด</th><th style="width:9%">เงินฝากธนาคาร</th><th style="width:9%">เงินฝากส่วนราชการ</th></tr>
+      <tr><th style="width:7%">ลูกหนี้</th><th style="width:7%">ใบสำคัญ</th>
+      <th style="width:7%">เงินสด</th><th style="width:8%">เงินฝากธนาคาร</th><th style="width:8%">เงินฝากส่วนราชการ</th></tr>
       </thead><tbody></tbody></table>`);
     const tb = table.querySelector('tbody');
     // แถวยอดยกมา
-    tb.appendChild(U.el(`<tr class="sum"><td colspan="3">ยอดยกมา ${U.thaiMonthYear(m)}</td>
+    tb.appendChild(U.el(`<tr class="sum"><td colspan="6">ยอดยกมา ${U.thaiMonthYear(m)}</td>
       <td class="num"></td><td class="num"></td><td class="num"></td>
       <td class="num">${U.money(data.start.b.cash)}</td><td class="num">${U.money(data.start.b.bank)}</td><td class="num">${U.money(data.start.b.gov)}</td><td></td></tr>`));
     let last = null, i = 0;
@@ -170,25 +185,28 @@
       const showDate = t.txn_date !== last; last = t.txn_date; i++;
       tb.appendChild(U.el(`<tr>
         <td class="c">${showDate ? U.esc(U.thaiDate(t.txn_date)) : ''}</td>
-        <td class="c">${t.doc_no ?? i}</td>
-        <td>${U.esc(t.description || '')}</td>
+        <td class="c">${U.esc(docNo(t, 'บค'))}</td>
+        <td class="c">${U.esc(docNo(t, 'บจ'))}</td>
+        <td class="c">${U.esc(docNo(t, 'บร'))}</td>
+        <td class="c">${U.esc(docNo(t, 'บย'))}</td>
+        <td>${U.esc(itemText(t))}</td>
         <td class="num">${U.money0(t.amount_in)}</td>
         <td class="num">${U.money0(ps.debtor)}</td>
         <td class="num">${U.money0(ps.voucher)}</td>
         <td class="num">${U.money0(bal.cash)}</td>
         <td class="num">${U.money(bal.bank)}</td>
         <td class="num">${U.money0(bal.gov)}</td>
-        <td>${U.esc(t.notes || '')}</td></tr>`));
+        <td>${U.esc(plainNotes(t))}</td></tr>`));
     });
-    if (!data.rows.length) tb.appendChild(U.el('<tr><td colspan="10" class="c" style="padding:16px;color:#999">— ไม่มีรายการในเดือนนี้ —</td></tr>'));
+    if (!data.rows.length) tb.appendChild(U.el('<tr><td colspan="13" class="c" style="padding:16px;color:#999">— ไม่มีรายการในเดือนนี้ —</td></tr>'));
     // รวมเดือนนี้
     const mt = data.monthTotals;
-    tb.appendChild(U.el(`<tr class="sum"><td colspan="3" class="c">รวมเดือนนี้</td>
+    tb.appendChild(U.el(`<tr class="sum"><td colspan="6" class="c">รวมเดือนนี้</td>
       <td class="num">${U.money(mt.rin)}</td><td class="num">${U.money(mt.debtor)}</td><td class="num">${U.money(mt.voucher)}</td>
       <td class="num">${U.money(data.endBal.cash)}</td><td class="num">${U.money(data.endBal.bank)}</td><td class="num">${U.money(data.endBal.gov)}</td><td></td></tr>`));
     // รวมตั้งแต่ต้นปี
     const ct = data.cumTotals;
-    tb.appendChild(U.el(`<tr class="sum"><td colspan="3" class="c">รวมตั้งแต่ต้นปี</td>
+    tb.appendChild(U.el(`<tr class="sum"><td colspan="6" class="c">รวมตั้งแต่ต้นปี</td>
       <td class="num">${U.money(ct.rin)}</td><td colspan="2" class="num">จ่ายสะสม ${U.money(ct.rout)}</td>
       <td class="num">${U.money(data.endBal.cash)}</td><td class="num">${U.money(data.endBal.bank)}</td><td class="num">${U.money(data.endBal.gov)}</td><td></td></tr>`));
     sheet.appendChild(table);
@@ -211,21 +229,21 @@
       [`ทะเบียนคุมเงินนอกงบประมาณ  ประเภท: ${acc.name}`],
       [`${s.name || ''} ${s.office || ''}  ปีงบประมาณ ${Store.getFY()}  ประจำเดือน ${U.thaiMonthYear(m)}`],
       [],
-      ['วัน เดือน ปี', 'ที่', 'รายการ', 'รับ', 'จ่าย-ลูกหนี้', 'จ่าย-ใบสำคัญ', 'คงเหลือ-เงินสด', 'คงเหลือ-ธนาคาร', 'คงเหลือ-ส่วนราชการ', 'หมายเหตุ'],
-      [`ยอดยกมา ${U.thaiMonthYear(m)}`, '', '', '', '', '', data.start.b.cash, data.start.b.bank, data.start.b.gov, ''],
+      ['วัน เดือน ปี', 'บค', 'บจ', 'บร', 'บย', 'รายการ / กิจกรรม', 'รับ', 'จ่าย-ลูกหนี้', 'จ่าย-ใบสำคัญ', 'คงเหลือ-เงินสด', 'คงเหลือ-ธนาคาร', 'คงเหลือ-ส่วนราชการ', 'หมายเหตุ'],
+      [`ยอดยกมา ${U.thaiMonthYear(m)}`, '', '', '', '', '', '', '', '', data.start.b.cash, data.start.b.bank, data.start.b.gov, ''],
     ];
     let last = null, i = 0;
     data.rows.forEach(({ t, ps, bal }) => {
       const showDate = t.txn_date !== last; last = t.txn_date; i++;
-      aoa.push([showDate ? U.thaiDate(t.txn_date) : '', t.doc_no || i, t.description || '',
-        Number(t.amount_in || 0), ps.debtor, ps.voucher, bal.cash, bal.bank, bal.gov, t.notes || '']);
+      aoa.push([showDate ? U.thaiDate(t.txn_date) : '', docNo(t, 'บค'), docNo(t, 'บจ'), docNo(t, 'บร'), docNo(t, 'บย'), itemText(t),
+        Number(t.amount_in || 0), ps.debtor, ps.voucher, bal.cash, bal.bank, bal.gov, plainNotes(t)]);
     });
     const mt = data.monthTotals;
-    aoa.push(['', '', 'รวมเดือนนี้', mt.rin, mt.debtor, mt.voucher, data.endBal.cash, data.endBal.bank, data.endBal.gov, '']);
-    aoa.push(['', '', 'รวมตั้งแต่ต้นปี', data.cumTotals.rin, data.cumTotals.rout, '', data.endBal.cash, data.endBal.bank, data.endBal.gov, '']);
+    aoa.push(['', '', '', '', '', 'รวมเดือนนี้', mt.rin, mt.debtor, mt.voucher, data.endBal.cash, data.endBal.bank, data.endBal.gov, '']);
+    aoa.push(['', '', '', '', '', 'รวมตั้งแต่ต้นปี', data.cumTotals.rin, data.cumTotals.rout, '', data.endBal.cash, data.endBal.bank, data.endBal.gov, '']);
     return aoa;
   }
-  function opts() { return { cols: [12, 5, 34, 12, 12, 12, 12, 13, 14, 12], numCols: [3, 4, 5, 6, 7, 8], merges: ['A1:J1', 'A2:J2'] }; }
+  function opts() { return { cols: [12, 6, 6, 6, 6, 34, 12, 12, 12, 12, 13, 14, 12], numCols: [6, 7, 8, 9, 10, 11], merges: ['A1:M1', 'A2:M2'] }; }
 
   function exportMonth(acc, m) {
     Exporter.download(`เงินนอกงบ_${acc.name}_${m}.xlsx`, U.thaiMonthYear(m), aoaOf(acc, m, Store.data().school || {}), opts());
