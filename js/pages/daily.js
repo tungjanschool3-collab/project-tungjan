@@ -13,6 +13,12 @@
     { v: 'cash', l: 'เงินสด' },
     { v: 'govdeposit', l: 'เงินฝากส่วนราชการ' },
   ];
+  const CSV_HEADERS = [
+    'วันที่', 'ประเภทเอกสาร', 'เลขที่เอกสาร', 'รายการ', 'รายจ่าย', 'รายรับ', 'บัญชี',
+    'ที่เก็บเงิน', 'งวดที่', 'จ่ายลูกหนี้', 'จ่ายใบสำคัญ', 'เลขใบสั่งซื้อ', 'เลขใบสั่งจ้าง',
+    'เลขบันทึกข้อความ', 'โครงการ', 'กิจกรรม', 'ระดับ', 'ไปราชการ', 'ล้างหนี้',
+    'ครูผู้รับผิดชอบ', 'หมายเหตุ'
+  ];
   let filterMonth = '';
 
   function txnsOfMonth(m) {
@@ -31,15 +37,27 @@
       <div class="field"><label>เดือน</label><select id="mSel"></select></div>
       <div class="spacer"></div>
       <button class="btn primary" id="addBtn">+ เพิ่มรายการ</button>
+      <button class="btn" id="importBtn">⬆️ นำเข้า CSV</button>
+      <button class="btn ghost" id="templateBtn">📄 แม่แบบ CSV</button>
+      <input type="file" id="csvFile" accept=".csv,text/csv" style="display:none">
       <button class="btn print" id="printBtn">🖨️ พิมพ์ (การรับ–จ่าย)</button>
       <button class="btn excel" id="xlsBtn">⬇️ Excel เดือนนี้</button>
+      <button class="btn excel" id="csvBtn">⬇️ CSV ข้อมูลทั้งหมด</button>
     </div>`);
     const mSel = tools.querySelector('#mSel');
     months.forEach(m => mSel.appendChild(U.el(`<option value="${m}" ${m === filterMonth ? 'selected' : ''}>${U.thaiMonthYear(m)}</option>`)));
     mSel.onchange = () => { filterMonth = mSel.value; App.go('daily'); };
     tools.querySelector('#addBtn').onclick = () => openEditor(null);
+    const csvFile = tools.querySelector('#csvFile');
+    tools.querySelector('#importBtn').onclick = () => csvFile.click();
+    csvFile.onchange = () => {
+      if (csvFile.files[0]) importCSV(csvFile.files[0]);
+      csvFile.value = '';
+    };
+    tools.querySelector('#templateBtn').onclick = downloadCSVTemplate;
     tools.querySelector('#printBtn').onclick = () => window.print();
     tools.querySelector('#xlsBtn').onclick = exportExcel;
+    tools.querySelector('#csvBtn').onclick = exportAllCSV;
     c.appendChild(tools);
 
     const rows = txnsOfMonth(filterMonth);
@@ -303,6 +321,164 @@
     Exporter.download(
       `การรับจ่าย_${filterMonth}.xlsx`, U.thaiMonthYear(filterMonth), aoa,
       { cols: [14, 5, 8, 8, 40, 13, 13, 18], numCols: [5, 6], merges: ['A1:H1', 'A2:H2'] }
+    );
+  }
+
+  // ---------------- CSV: นำเข้าหลายวัน / ส่งออกประวัติทั้งหมด ----------------
+  function csvCell(value) {
+    const s = String(value == null ? '' : value);
+    return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+
+  function downloadCSV(filename, rows) {
+    const text = String.fromCharCode(0xFEFF) + rows.map(r => r.map(csvCell).join(',')).join('\r\n');
+    const url = URL.createObjectURL(new Blob([text], { type: 'text/csv;charset=utf-8;' }));
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+  }
+
+  function downloadCSVTemplate() {
+    downloadCSV('แม่แบบรายรับรายจ่าย.csv', [CSV_HEADERS, [
+      U.todayISO(), 'บจ', Store.nextDocNo(), 'ตัวอย่างรายการ', 1000, 0,
+      (Store.data().accounts[0] || {}).name || '', 'เงินฝากธนาคาร', '', 0, 1000,
+      '', '', '', '', '', '', 'ไม่', '', '', ''
+    ]]);
+    U.toast('ดาวน์โหลดแม่แบบ CSV แล้ว');
+  }
+
+  function exportAllCSV() {
+    const D = Store.data();
+    const rows = [...D.transactions].sort((a, b) =>
+      String(a.txn_date).localeCompare(String(b.txn_date)) || Number(a.doc_no || 0) - Number(b.doc_no || 0)
+    );
+    const values = rows.map(t => {
+      const acc = Store.accountById(t.account_id);
+      const teacher = Store.teacherById(t.teacher_id);
+      const project = Store.projectById(t.project_id);
+      const notes = String(t.notes || '').split('\n');
+      const activity = notes.find(x => x.startsWith('[กิจกรรม] '))?.slice(10) || '';
+      const cleanNotes = notes.filter(x => !x.startsWith('[กิจกรรม] ')).join('\n');
+      return [
+        t.txn_date || '', t.doc_type || '', t.doc_no ?? '', t.description || '',
+        Number(t.amount_out || 0), Number(t.amount_in || 0), acc ? acc.name : '',
+        BAL_TYPES.find(x => x.v === t.bal_type)?.l || t.bal_type || '', t.round_no ?? '',
+        Number(t.pay_debtor || 0), Number(t.pay_voucher || 0), t.po_no || '', t.hire_no || '',
+        t.memo_no || '', project ? project.name : (t.project || ''), activity, t.level || '',
+        t.travel ? 'ใช่' : 'ไม่', t.clear_status === 'cleared' ? 'เช็คล้างหนี้' : (t.clear_status === 'none' ? 'ไม่ทำ' : ''),
+        teacher ? teacher.name : '', cleanNotes
+      ];
+    });
+    downloadCSV(`รายรับรายจ่าย_ข้อมูลทั้งหมด_${U.todayISO()}.csv`, [CSV_HEADERS, ...values]);
+    U.toast(`ส่งออกข้อมูลย้อนหลังทั้งหมด ${rows.length} รายการแล้ว`);
+  }
+
+  const norm = value => String(value == null ? '' : value).trim().toLowerCase().replace(/[\s_.\-–—/()]+/g, '');
+  const num = value => {
+    if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+    const n = Number(String(value == null ? '' : value).replace(/,/g, '').trim());
+    return Number.isFinite(n) ? n : 0;
+  };
+  const yes = value => ['1', 'true', 'yes', 'y', 'ใช่', 'มี'].includes(norm(value));
+
+  function isoDate(value) {
+    if (value instanceof Date && !Number.isNaN(value.getTime())) {
+      return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`;
+    }
+    if (typeof value === 'number' && window.XLSX?.SSF) {
+      const d = XLSX.SSF.parse_date_code(value);
+      if (d) return `${d.y}-${String(d.m).padStart(2, '0')}-${String(d.d).padStart(2, '0')}`;
+    }
+    const s = String(value == null ? '' : value).trim();
+    let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    if (m) {
+      let y = Number(m[1]); if (y > 2400) y -= 543;
+      return `${y}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`;
+    }
+    m = s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+    if (m) {
+      let y = Number(m[3]); if (y > 2400) y -= 543;
+      return `${y}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+    }
+    return '';
+  }
+
+  function transactionKey(t) {
+    return [t.txn_date, t.doc_type || '', t.doc_no ?? '', norm(t.description), num(t.amount_out), num(t.amount_in), t.account_id || ''].join('|');
+  }
+
+  async function importCSV(file) {
+    if (!window.XLSX) { U.toast('ยังโหลดตัวอ่านไฟล์ไม่สำเร็จ', 'err'); return; }
+    let data;
+    try {
+      const wb = XLSX.read(new Uint8Array(await file.arrayBuffer()), { type: 'array', cellDates: true });
+      data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, blankrows: false, defval: '' });
+    } catch (e) { U.toast('อ่านไฟล์ CSV ไม่สำเร็จ: ' + (e.message || e), 'err'); return; }
+    if (!data || data.length < 2) { U.toast('ไฟล์ CSV ไม่มีข้อมูล', 'err'); return; }
+
+    const aliases = {
+      date: ['วันที่', 'วันเดือนปี', 'date', 'txndate'], type: ['ประเภทเอกสาร', 'ประเภท', 'doctype'],
+      no: ['เลขที่เอกสาร', 'เลขที่', 'docno'], desc: ['รายการ', 'รายละเอียด', 'description'],
+      out: ['รายจ่าย', 'amountout'], in: ['รายรับ', 'amountin'], account: ['บัญชี', 'account'],
+      bal: ['ที่เก็บเงิน', 'ช่องคงเหลือ', 'baltype'], round: ['งวดที่', 'roundno'],
+      debtor: ['จ่ายลูกหนี้', 'paydebtor'], voucher: ['จ่ายใบสำคัญ', 'payvoucher'],
+      po: ['เลขใบสั่งซื้อ', 'ใบสั่งซื้อ', 'pono'], hire: ['เลขใบสั่งจ้าง', 'ใบสั่งจ้าง', 'hireno'],
+      memo: ['เลขบันทึกข้อความ', 'เลขบันทึก', 'memono'], project: ['โครงการ', 'project'],
+      activity: ['กิจกรรม', 'activity'], level: ['ระดับ', 'level'], travel: ['ไปราชการ', 'travel'],
+      clear: ['ล้างหนี้', 'clearstatus'], teacher: ['ครูผู้รับผิดชอบ', 'ผู้รับผิดชอบ', 'teacher'],
+      notes: ['หมายเหตุ', 'notes']
+    };
+    const headers = data[0].map(norm), idx = {};
+    Object.entries(aliases).forEach(([key, names]) => { idx[key] = headers.findIndex(h => names.map(norm).includes(h)); });
+    if (idx.date < 0 || idx.desc < 0) { U.toast('ต้องมีคอลัมน์ “วันที่” และ “รายการ”', 'err'); return; }
+
+    const D = Store.data(), get = (row, key) => idx[key] >= 0 ? row[idx[key]] : '';
+    const accountMap = new Map(), teacherMap = new Map(), projectMap = new Map();
+    D.accounts.forEach(x => { accountMap.set(norm(x.name), x); if (x.code) accountMap.set(norm(x.code), x); });
+    D.teachers.forEach(x => teacherMap.set(norm(x.name), x));
+    D.projects.forEach(x => projectMap.set(norm(x.name), x));
+    const existing = new Set(D.transactions.map(transactionKey)), pending = new Set();
+    const rows = []; let invalid = 0, duplicate = 0;
+    data.slice(1).forEach(source => {
+      const date = isoDate(get(source, 'date')), description = String(get(source, 'desc') || '').trim();
+      if (!date || !description) { invalid++; return; }
+      const account = accountMap.get(norm(get(source, 'account'))), teacher = teacherMap.get(norm(get(source, 'teacher'))), project = projectMap.get(norm(get(source, 'project')));
+      const balText = norm(get(source, 'bal'));
+      const bal = BAL_TYPES.find(x => norm(x.v) === balText || norm(x.l) === balText)?.v || 'bank';
+      const clearText = norm(get(source, 'clear'));
+      const activity = String(get(source, 'activity') || '').trim(), notes = String(get(source, 'notes') || '').trim();
+      const row = {
+        txn_date: date, doc_type: String(get(source, 'type') || '').trim() || null,
+        doc_no: get(source, 'no') === '' ? null : Math.trunc(num(get(source, 'no'))), description,
+        amount_out: num(get(source, 'out')), amount_in: num(get(source, 'in')),
+        account_id: account?.id || null, bal_type: bal,
+        round_no: get(source, 'round') === '' ? null : Math.trunc(num(get(source, 'round'))),
+        pay_debtor: num(get(source, 'debtor')), pay_voucher: num(get(source, 'voucher')),
+        po_no: String(get(source, 'po') || '').trim() || null, hire_no: String(get(source, 'hire') || '').trim() || null,
+        memo_no: String(get(source, 'memo') || '').trim() || null,
+        project: project?.name || String(get(source, 'project') || '').trim() || null, project_id: project?.id || null,
+        level: String(get(source, 'level') || '').trim() || null, travel: yes(get(source, 'travel')),
+        clear_status: clearText === norm('เช็คล้างหนี้') || clearText === 'cleared' ? 'cleared' : (clearText === norm('ไม่ทำ') || clearText === 'none' ? 'none' : null),
+        teacher_id: teacher?.id || null,
+        notes: ((activity ? '[กิจกรรม] ' + activity + '\n' : '') + notes).trim() || null
+      };
+      const key = transactionKey(row);
+      if (existing.has(key) || pending.has(key)) { duplicate++; return; }
+      pending.add(key); rows.push(row);
+    });
+    if (!rows.length) { U.toast(`ไม่มีรายการใหม่ให้นำเข้า (ซ้ำ ${duplicate}, ไม่สมบูรณ์ ${invalid})`, 'err'); return; }
+
+    App.confirmDialog(
+      `พบรายการใหม่ ${rows.length} รายการ จากหลายวัน${duplicate ? ` · ข้ามรายการซ้ำ ${duplicate}` : ''}${invalid ? ` · ข้ามแถวไม่สมบูรณ์ ${invalid}` : ''}\n\nข้อมูลเดิมในระบบจะไม่ถูกลบหรือเขียนทับ ยืนยันนำเข้า?`,
+      async () => {
+        try {
+          for (let i = 0; i < rows.length; i += 200) await Store.insertMany('transactions', rows.slice(i, i + 200));
+          await Store.loadAll();
+          filterMonth = U.ymOf(rows[rows.length - 1].txn_date);
+          U.toast(`นำเข้าสำเร็จ ${rows.length} รายการ · ข้อมูลเดิมยังอยู่ครบ`);
+          App.go('daily');
+        } catch (e) { U.toast('นำเข้าไม่สำเร็จ: ' + (e.message || e), 'err'); }
+      }, { danger: false, yes: 'นำเข้า' }
     );
   }
 
