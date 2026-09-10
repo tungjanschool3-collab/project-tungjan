@@ -165,6 +165,7 @@ table.reg tr.sum td{font-weight:700;background:#fafafa}
 .print-only{display:none}
 @media print{
   @page{size:A4 landscape;margin:8mm}
+  @page dailyPortrait{size:A4 portrait;margin:10mm}
   body{background:#fff}
   .sidebar,.topbar,.toolbar,.no-print,#toast,.modal-back{display:none!important}
   .main{padding:0}
@@ -176,6 +177,7 @@ table.reg tr.sum td{font-weight:700;background:#fafafa}
   table.reg.wide{font-size:14pt}
   table.reg th{background:#eee!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .page-break{page-break-after:always}
+  .daily-print-sheet{page:dailyPortrait}
 }
 /* ทะเบียนที่พิมพ์แนวตั้ง */
 @media print{
