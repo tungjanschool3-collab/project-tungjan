@@ -159,6 +159,8 @@ table.reg th{text-align:center;font-weight:700;background:#f2f2f2}
 table.reg td.num{text-align:right;font-variant-numeric:tabular-nums}
 table.reg td.c{text-align:center}
 table.reg tr.sum td{font-weight:700;background:#fafafa}
+.offbudget-reg{font-size:13pt}
+.offbudget-reg th,.offbudget-reg td{padding:1px 3px}
 .sign-row{display:flex;justify-content:space-around;margin-top:34px;font-family:'TH SarabunPSK','TH Sarabun New','Sarabun',serif;font-size:16pt;text-align:center}
 .sign-row .s{white-space:nowrap}
 
@@ -175,6 +177,7 @@ table.reg tr.sum td{font-weight:700;background:#fafafa}
   /* ตารางกว้าง (หลายคอลัมน์) ย่ออัตโนมัติให้พอดีหน้ากระดาษ */
   table.reg{font-size:16pt}
   table.reg.wide{font-size:14pt}
+  table.reg.offbudget-reg{font-size:13pt}
   table.reg th{background:#eee!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .page-break{page-break-after:always}
   .daily-print-sheet{page:dailyPortrait}
