@@ -172,7 +172,7 @@
 
     const foot = U.el('<div class="btn-row"></div>');
     const cancel = U.el('<button class="btn ghost">ยกเลิก</button>');
-    const saveNext = isNew ? U.el('<button class="btn">💾 บันทึกและเพิ่มต่อ</button>') : null;
+    const saveNext = isNew ? U.el('<button class="btn">＋ เพิ่มรายการ</button>') : null;
     const save = U.el('<button class="btn primary">💾 บันทึกและเสร็จ</button>');
     cancel.onclick = App.closeModal;
     const saveEntry = async keepOpen => {
@@ -208,7 +208,7 @@
           ['#f_round','#f_po','#f_hire','#f_memo','#f_proj','#f_level','#f_notes'].forEach(id => { g(id).value = ''; });
           g('#f_clear').value = ''; g('#f_teacher').value = ''; g('#f_travel').checked = false;
           save.disabled = false; save.textContent = '💾 บันทึกและเสร็จ';
-          saveNext.disabled = false; saveNext.textContent = '💾 บันทึกและเพิ่มต่อ';
+          saveNext.disabled = false; saveNext.textContent = '＋ เพิ่มรายการ';
           g('#f_desc').focus();
           return;
         }
@@ -217,7 +217,7 @@
       } catch (e) {
         console.error(e); U.toast('บันทึกไม่สำเร็จ: ' + (e.message || e), 'err');
         save.disabled = false; save.textContent = '💾 บันทึกและเสร็จ';
-        if (saveNext) { saveNext.disabled = false; saveNext.textContent = '💾 บันทึกและเพิ่มต่อ'; }
+        if (saveNext) { saveNext.disabled = false; saveNext.textContent = '＋ เพิ่มรายการ'; }
       }
     };
     if (saveNext) saveNext.onclick = () => saveEntry(true);
