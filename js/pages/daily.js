@@ -172,9 +172,10 @@
 
     const foot = U.el('<div class="btn-row"></div>');
     const cancel = U.el('<button class="btn ghost">ยกเลิก</button>');
-    const save = U.el('<button class="btn primary">💾 บันทึกรายการ</button>');
+    const saveNext = isNew ? U.el('<button class="btn">💾 บันทึกและเพิ่มต่อ</button>') : null;
+    const save = U.el('<button class="btn primary">💾 บันทึกและเสร็จ</button>');
     cancel.onclick = App.closeModal;
-    save.onclick = async () => {
+    const saveEntry = async keepOpen => {
       const g = id => body.querySelector(id);
       const payload = {
         txn_date: g('#f_date').value, doc_type: g('#f_doctype').value || null,
@@ -193,15 +194,37 @@
       };
       if (!payload.txn_date) { U.toast('กรุณาเลือกวันที่', 'err'); return; }
       if (!payload.description) { U.toast('กรุณากรอกรายการ', 'err'); return; }
-      save.disabled = true; save.textContent = 'กำลังบันทึก...';
+      save.disabled = true;
+      if (saveNext) saveNext.disabled = true;
+      (keepOpen && saveNext ? saveNext : save).textContent = 'กำลังบันทึก...';
       try {
         if (isNew) await Store.insert('transactions', payload);
         else await Store.update('transactions', t.id, payload);
+        if (keepOpen && isNew) {
+          U.toast('บันทึกแล้ว — เพิ่มรายการถัดไปได้ทันที');
+          g('#f_docno').value = payload.doc_no == null ? '' : Number(payload.doc_no) + 1;
+          g('#f_desc').value = '';
+          ['#f_in','#f_out','#f_paydebt','#f_payvou'].forEach(id => { g(id).value = 0; });
+          ['#f_round','#f_po','#f_hire','#f_memo','#f_proj','#f_level','#f_notes'].forEach(id => { g(id).value = ''; });
+          g('#f_clear').value = ''; g('#f_teacher').value = ''; g('#f_travel').checked = false;
+          save.disabled = false; save.textContent = '💾 บันทึกและเสร็จ';
+          saveNext.disabled = false; saveNext.textContent = '💾 บันทึกและเพิ่มต่อ';
+          g('#f_desc').focus();
+          return;
+        }
         U.toast('บันทึกรายการแล้ว'); App.closeModal();
         filterMonth = U.ymOf(payload.txn_date); await reload();
-      } catch (e) { console.error(e); U.toast('บันทึกไม่สำเร็จ: ' + (e.message || e), 'err'); save.disabled = false; save.textContent = '💾 บันทึกรายการ'; }
+      } catch (e) {
+        console.error(e); U.toast('บันทึกไม่สำเร็จ: ' + (e.message || e), 'err');
+        save.disabled = false; save.textContent = '💾 บันทึกและเสร็จ';
+        if (saveNext) { saveNext.disabled = false; saveNext.textContent = '💾 บันทึกและเพิ่มต่อ'; }
+      }
     };
-    foot.append(cancel, save);
+    if (saveNext) saveNext.onclick = () => saveEntry(true);
+    save.onclick = () => saveEntry(false);
+    foot.append(cancel);
+    if (saveNext) foot.append(saveNext);
+    foot.append(save);
     App.openModal(isNew ? 'เพิ่มรายการรับ–จ่าย' : 'แก้ไขรายการ', body, foot, { width: '760px' });
   }
 
