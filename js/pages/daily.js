@@ -130,6 +130,8 @@
         </div>
         <div class="grid c2" style="margin-top:10px">
           <div class="field" style="grid-column:span 2"><label>รายการ *</label><input id="f_desc" value="${U.esc(v.description)}"></div>
+          <div class="field"><label>โครงการ</label><select id="f_proj"><option value="">— เลือกโครงการ —</option></select></div>
+          <div class="field"><label>กิจกรรม</label><select id="f_activity"><option value="">— เลือกกิจกรรมต่อ —</option></select></div>
           <div class="field"><label>บัญชี</label><select id="f_acc"></select></div>
           <div class="field"><label>ที่เก็บเงิน (คงเหลือช่อง)</label><select id="f_bal"></select></div>
           <div class="field"><label>รายรับ</label><input id="f_in" type="number" step="0.01" value="${v.amount_in || 0}"></div>
@@ -148,13 +150,11 @@
       </details>
 
       <details class="card" style="box-shadow:none;border:1px solid var(--line)" ${(v.po_no||v.hire_no||v.project||v.travel)?'open':''}>
-        <summary style="cursor:pointer;font-weight:700">ใบสั่งซื้อ/สั่งจ้าง/ไปราชการ & โครงการ — ไม่บังคับ</summary>
+        <summary style="cursor:pointer;font-weight:700">ใบสั่งซื้อ/สั่งจ้าง/ไปราชการ — ไม่บังคับ</summary>
         <div class="grid c3" style="margin-top:10px">
           <div class="field"><label>เลขใบสั่งซื้อ</label><input id="f_po" value="${U.esc(v.po_no||'')}"></div>
           <div class="field"><label>เลขใบสั่งจ้าง</label><input id="f_hire" value="${U.esc(v.hire_no||'')}"></div>
           <div class="field"><label>เลขบันทึกข้อความ</label><input id="f_memo" value="${U.esc(v.memo_no||'')}"></div>
-          <div class="field"><label>โครงการ</label><select id="f_proj"><option value="">— เลือกโครงการ —</option></select></div>
-          <div class="field"><label>กิจกรรม</label><select id="f_activity"><option value="">— เลือกกิจกรรม —</option></select></div>
           <div class="field"><label>ระดับ</label><input id="f_level" value="${U.esc(v.level||'')}" placeholder="อนุบาล/ประถม"></div>
           <div class="field"><label>ล้างหนี้</label><select id="f_clear"></select></div>
           <div class="field"><label>ครูที่รับผิดชอบ</label><select id="f_teacher"></select></div>
@@ -179,7 +179,7 @@
       const p = Store.projectById(projectSel.value);
       const names = (D.projectActivities || []).filter(a => a.project_id === projectSel.value).map(a => a.name);
       if (p && String(p.note || '').startsWith('[PROJECT_REPORT]')) { try { const n = JSON.parse(String(p.note).slice(16)).activity; if (n) names.push(n); } catch (e) {} }
-      activitySel.innerHTML = '<option value="">— เลือกกิจกรรม —</option>';
+      activitySel.innerHTML = '<option value="">— เลือกกิจกรรมต่อ —</option>';
       [...new Set(names.filter(Boolean))].forEach(name => activitySel.appendChild(U.el(`<option value="${U.esc(name)}" ${name === existingActivity ? 'selected' : ''}>${U.esc(name)}</option>`)));
     };
     projectSel.onchange = updateActivities; updateActivities();
@@ -221,7 +221,8 @@
           g('#f_docno').value = payload.doc_no == null ? '' : Number(payload.doc_no) + 1;
           g('#f_desc').value = '';
           ['#f_in','#f_out','#f_paydebt','#f_payvou'].forEach(id => { g(id).value = 0; });
-          ['#f_round','#f_po','#f_hire','#f_memo','#f_proj','#f_level','#f_notes'].forEach(id => { g(id).value = ''; });
+          ['#f_round','#f_po','#f_hire','#f_memo','#f_proj','#f_activity','#f_level','#f_notes'].forEach(id => { g(id).value = ''; });
+          updateActivities();
           g('#f_clear').value = ''; g('#f_teacher').value = ''; g('#f_travel').checked = false;
           save.disabled = false; save.textContent = '💾 บันทึกและเสร็จ';
           saveNext.disabled = false; saveNext.textContent = '＋ เพิ่มรายการ';
