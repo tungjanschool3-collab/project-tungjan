@@ -217,7 +217,9 @@
         if (isNew) await Store.insert('transactions', payload);
         else await Store.update('transactions', t.id, payload);
         if (keepOpen && isNew) {
-          U.toast('บันทึกแล้ว — เพิ่มรายการถัดไปได้ทันที');
+          // โหลดข้อมูลล่าสุดทันที เพื่อให้ทะเบียน บค./บจ./บย./บร. ใบสั่งซื้อ/สั่งจ้าง และเงินนอกงบประมาณซิงค์กัน
+          await Store.loadAll();
+          U.toast('บันทึกและซิงค์ทุกทะเบียนแล้ว — เพิ่มรายการถัดไปได้ทันที');
           g('#f_docno').value = payload.doc_no == null ? '' : Number(payload.doc_no) + 1;
           g('#f_desc').value = '';
           ['#f_in','#f_out','#f_paydebt','#f_payvou'].forEach(id => { g(id).value = 0; });
