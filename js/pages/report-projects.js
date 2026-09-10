@@ -1,140 +1,24 @@
-// ============================================================
-//  รายงานงบโครงการ — งบที่ได้รับ vs รายจ่ายจริง vs คงเหลือ (ต่อโครงการ)
-//  "ใช้ไปจริง" = ผลรวมรายจ่าย (amount_out) ของรายการที่ผูกกับโครงการนั้น
-// ============================================================
+// รายงานงบโครงการ — CSV / รอบจัดสรร / รอบใช้จ่าย / PDF
 (function () {
+  const PREFIX='[PROJECT_REPORT]';
+  const COLS=[['no','ที่',['ที่','ลำดับ','no']],['project','ชื่อโครงการ',['ชื่อโครงการ','โครงการ','project']],['activity','ชื่อกิจกรรม',['ชื่อกิจกรรม','กิจกรรม','activity']],['received','จำนวนเงินที่ได้รับ',['จำนวนเงินที่ได้รับ','เงินที่ได้รับ','งบประมาณ','received']],...Array.from({length:6},(_,i)=>[`a${i+1}`,`จัดสรรรอบที่ ${i+1}`,[`จัดสรรรอบที่ ${i+1}`,`จัดสรรรอบ ${i+1}`,`alloc${i+1}`]]),['spent','จำนวนที่ใช้',['จำนวนที่ใช้','ใช้ไป','spent']],...Array.from({length:4},(_,i)=>[`s${i+1}`,`จำนวนที่ใช้ในรอบที่ ${i+1}`,[`จำนวนที่ใช้ในรอบที่ ${i+1}`,`ใช้รอบที่ ${i+1}`,`spent${i+1}`]]),['remain','คงเหลือ',['คงเหลือ','remain']],['percent','ใช้ไปกี่ %',['ใช้ไปกี่ %','ใช้ไป%','เปอร์เซ็นต์','percent']]];
+  const num=v=>{if(typeof v==='number')return Number.isFinite(v)?v:0;const n=parseFloat(String(v==null?'':v).replace(/,/g,'').replace(/[^0-9.\-]/g,''));return Number.isFinite(n)?n:0;};
+  const emptyMeta=note=>({activity:'',allocations:Array(6).fill(0),spentRounds:Array(4).fill(0),importedSpent:null,note:String(note||'')});
+  function meta(note){const s=String(note||'');if(!s.startsWith(PREFIX))return emptyMeta(s);try{const m=JSON.parse(s.slice(PREFIX.length));return{activity:m.activity||'',allocations:Array.from({length:6},(_,i)=>num((m.allocations||[])[i])),spentRounds:Array.from({length:4},(_,i)=>num((m.spentRounds||[])[i])),importedSpent:m.importedSpent==null?null:num(m.importedSpent),note:m.note||''};}catch(e){return emptyMeta(s);}}
+  const encode=m=>PREFIX+JSON.stringify(m), money=v=>U.money(Number(v||0));
+  function txnSpent(p,txns){const n=(p.name||'').trim();return txns.reduce((s,t)=>s+((t.project_id===p.id||(!t.project_id&&(t.project||'').trim()===n))?Number(t.amount_out||0):0),0);}
+  function rows(){const txns=Store.txnsFY();return Store.projectsFY().map((p,i)=>{const m=meta(p.note),received=Number(p.budget||0)+Number(p.budget_adjust||0),spent=m.importedSpent==null?txnSpent(p,txns):m.importedSpent;return{no:i+1,p,activity:m.activity,allocations:m.allocations,spentRounds:m.spentRounds,received,spent,remain:received-spent,percent:received>0?spent/received*100:0};});}
+  function totals(rs){const received=rs.reduce((s,r)=>s+r.received,0),spent=rs.reduce((s,r)=>s+r.spent,0);return{received,spent,remain:received-spent,percent:received>0?spent/received*100:0};}
 
-  // ผูกกับโครงการ: ตรง project_id หรือ (ไม่มี id แต่ชื่อ project ตรง) เพื่อครอบคลุมรายการเดิม
-  function spentOf(p, txns) {
-    const nm = (p.name || '').trim();
-    return txns.reduce((s, t) => {
-      const linked = t.project_id === p.id || (!t.project_id && (t.project || '').trim() === nm);
-      return linked ? s + Number(t.amount_out || 0) : s;
-    }, 0);
-  }
-
-  function computeRows() {
-    const txns = Store.txnsFY();
-    return Store.projectsFY().map((p, i) => {
-      const budget = Number(p.budget || 0) + Number(p.budget_adjust || 0); // งบสุทธิ = รวม + เพิ่ม/ปรับ
-      const spent = spentOf(p, txns);
-      return { no: i + 1, p, budget, spent, remain: budget - spent };
-    });
-  }
-
-  function render(c) {
-    const s = Store.data().school || {};
-    const rows = computeRows();
-
-    const tools = U.el(`<div class="toolbar no-print">
-      <div class="spacer"></div>
-      <button class="btn print" id="printBtn">🖨️ พิมพ์ A4</button>
-      <button class="btn excel" id="xlsBtn">⬇️ Excel</button>
-    </div>`);
-    tools.querySelector('#printBtn').onclick = () => window.print();
-    tools.querySelector('#xlsBtn').onclick = () => exportExcel(rows, s);
-    c.appendChild(tools);
-
-    c.appendChild(buildScreen(rows));
-    c.appendChild(buildPrintSheet(rows, s));
-  }
-
-  // ----- ตารางบนจอ -----
-  function buildScreen(rows) {
-    const tBudget = rows.reduce((a, r) => a + r.budget, 0);
-    const tSpent = rows.reduce((a, r) => a + r.spent, 0);
-    const tRemain = tBudget - tSpent;
-
-    const card = U.el(`<div class="card no-print"><div class="table-wrap"><table class="data">
-      <thead><tr>
-        <th style="width:44px">ที่</th><th>โครงการ</th>
-        <th class="num">งบสุทธิ</th><th class="num">ใช้ไป (จ่ายจริง)</th><th class="num">คงเหลือ</th><th style="width:150px">ใช้ไป %</th>
-      </tr></thead><tbody id="rb"></tbody>
-      <tfoot><tr style="font-weight:700;background:#f7f9fe">
-        <td colspan="2" style="text-align:right">รวมทั้งสิ้น (${rows.length} โครงการ)</td>
-        <td class="num">${U.money(tBudget)}</td><td class="num">${U.money(tSpent)}</td>
-        <td class="num" style="color:${tRemain < 0 ? '#c0392b' : 'inherit'}">${U.money(tRemain)}</td><td></td>
-      </tr></tfoot>
-      </table></div></div>`);
-    const b = card.querySelector('#rb');
-    if (!rows.length) {
-      b.appendChild(U.el('<tr><td colspan="6"><div class="empty">ยังไม่มีโครงการ — ไปที่ ข้อมูลหลัก → 📁 โครงการ เพื่อเพิ่มหรือนำเข้า CSV</div></td></tr>'));
-      return card;
-    }
-    rows.forEach(r => {
-      const pct = r.budget > 0 ? Math.min(100, Math.round(r.spent / r.budget * 100)) : 0;
-      const over = r.remain < 0;
-      const barColor = over ? '#c0392b' : pct >= 90 ? '#e67e22' : '#2e86de';
-      const tr = U.el(`<tr>
-        <td class="c">${r.no}</td>
-        <td><b>${U.esc(r.p.name)}</b>${r.p.note ? `<div class="sub" style="font-size:12px">${U.esc(r.p.note)}</div>` : ''}</td>
-        <td class="num">${U.money(r.budget)}</td>
-        <td class="num money-out">${U.money(r.spent)}</td>
-        <td class="num" style="color:${over ? '#c0392b' : 'inherit'};font-weight:600">${U.money(r.remain)}</td>
-        <td>
-          <div style="display:flex;align-items:center;gap:6px">
-            <div style="flex:1;height:8px;background:#eef1f6;border-radius:5px;overflow:hidden">
-              <div style="width:${pct}%;height:100%;background:${barColor}"></div>
-            </div>
-            <span style="font-size:12px;min-width:34px;text-align:right">${r.budget > 0 ? pct + '%' : '—'}</span>
-          </div>
-        </td></tr>`);
-      b.appendChild(tr);
-    });
-    return card;
-  }
-
-  // ----- แผ่นพิมพ์ A4 -----
-  function buildPrintSheet(rows, s) {
-    const sheet = U.el('<div class="print-only sheet"></div>');
-    sheet.appendChild(U.el(`<div class="doc-head">
-      <div class="fy">ปีงบประมาณ ${Store.getFY()}</div><img class="doc-logo" src="assets/logo.png" alt="">
-      <div class="t1">รายงานงบโครงการ (งบที่ได้รับ / จ่ายจริง / คงเหลือ)</div>
-      <div class="t2">${U.esc(s.name || '')} ${U.esc(s.district || '')} จังหวัด${U.esc(s.province || '')}</div>
-    </div>`));
-    const table = U.el(`<table class="reg"><thead><tr>
-      <th style="width:6%">ที่</th><th>โครงการ</th>
-      <th style="width:18%">งบสุทธิ</th><th style="width:18%">จ่ายจริง</th><th style="width:18%">คงเหลือ</th>
-    </tr></thead><tbody></tbody></table>`);
-    const tb = table.querySelector('tbody');
-    let tB = 0, tS = 0;
-    rows.forEach(r => {
-      tB += r.budget; tS += r.spent;
-      tb.appendChild(U.el(`<tr>
-        <td class="c">${r.no}</td>
-        <td>${U.esc(r.p.name)}</td>
-        <td class="num">${U.money(r.budget)}</td>
-        <td class="num">${U.money(r.spent)}</td>
-        <td class="num">${U.money(r.remain)}</td></tr>`));
-    });
-    if (!rows.length) tb.appendChild(U.el('<tr><td colspan="5" class="c" style="padding:20px;color:#999">— ไม่มีโครงการ —</td></tr>'));
-    tb.appendChild(U.el(`<tr class="sum"><td colspan="2" class="c">รวมทั้งสิ้น</td>
-      <td class="num">${U.money(tB)}</td><td class="num">${U.money(tS)}</td><td class="num">${U.money(tB - tS)}</td></tr>`));
-    sheet.appendChild(table);
-    if (window.TxnEditor && window.TxnEditor.signRow) sheet.appendChild(window.TxnEditor.signRow(s));
-    return sheet;
-  }
-
-  // ----- ส่งออก Excel -----
-  function exportExcel(rows, s) {
-    const aoa = [
-      [`รายงานงบโครงการ  ${s.name || ''}  ปีงบประมาณ ${Store.getFY()}`],
-      [],
-      ['ที่', 'โครงการ', 'งบสุทธิ', 'จ่ายจริง', 'คงเหลือ'],
-    ];
-    let tB = 0, tS = 0;
-    rows.forEach(r => {
-      tB += r.budget; tS += r.spent;
-      aoa.push([r.no, r.p.name, r.budget, r.spent, r.remain]);
-    });
-    aoa.push(['', 'รวมทั้งสิ้น', tB, tS, tB - tS]);
-    Exporter.download('รายงานงบโครงการ.xlsx', 'งบโครงการ', aoa,
-      { cols: [5, 40, 16, 16, 16], numCols: [2, 3, 4], merges: ['A1:E1'] });
-  }
-
-  App.register('report-projects', {
-    title: 'รายงานงบโครงการ',
-    subtitle: 'เปรียบเทียบงบที่ได้รับ กับ รายจ่ายจริง และคงเหลือ ต่อโครงการ',
-    render,
-  });
+  function render(c){const rs=rows(),school=Store.data().school||{};const tools=U.el(`<div class="toolbar no-print"><button class="btn primary" id="imp">⬆️ นำเข้าโครงการ CSV</button><button class="btn ghost" id="tpl">📄 ไฟล์ตัวอย่าง</button><input type="file" id="file" accept=".csv" style="display:none"><div class="spacer"></div><button class="btn print" id="pdf">⬇️ PDF / พิมพ์</button><button class="btn excel" id="xls">⬇️ Excel</button></div>`),file=tools.querySelector('#file');tools.querySelector('#imp').onclick=()=>file.click();file.onchange=()=>{if(file.files[0])importCSV(file.files[0]);file.value='';};tools.querySelector('#tpl').onclick=template;tools.querySelector('#pdf').onclick=()=>window.print();tools.querySelector('#xls').onclick=()=>excel(rs,school);c.append(tools,screen(rs),printSheet(rs,school));}
+  const headers=()=>COLS.map(c=>c[1]);
+  function values(r){return[r.no,r.p.name,r.activity,r.received,...r.allocations,r.spent,...r.spentRounds,r.remain,Number(r.percent.toFixed(2))];}
+  function screen(rs){const t=totals(rs),card=U.el(`<div class="card no-print"><div class="sub" style="margin-bottom:10px">นำเข้า CSV ของโรงเรียนได้โดยตรง · เลื่อนตารางซ้าย–ขวาเพื่อดูทุกรอบ</div><div class="table-wrap"><table class="data" style="min-width:2100px"><thead><tr>${headers().map((h,i)=>`<th class="${i>2?'num':''}">${h}</th>`).join('')}</tr></thead><tbody></tbody><tfoot></tfoot></table></div></div>`),b=card.querySelector('tbody');if(!rs.length)b.appendChild(U.el('<tr><td colspan="17"><div class="empty">ยังไม่มีข้อมูล — กด “นำเข้าโครงการ CSV” หรือดาวน์โหลดไฟล์ตัวอย่าง</div></td></tr>'));rs.forEach(r=>b.appendChild(U.el(`<tr><td class="c">${r.no}</td><td><b>${U.esc(r.p.name)}</b></td><td>${U.esc(r.activity)}</td><td class="num">${money(r.received)}</td>${r.allocations.map(v=>`<td class="num">${money(v)}</td>`).join('')}<td class="num money-out">${money(r.spent)}</td>${r.spentRounds.map(v=>`<td class="num">${money(v)}</td>`).join('')}<td class="num" style="font-weight:700;color:${r.remain<0?'#c0392b':'inherit'}">${money(r.remain)}</td><td class="num">${r.percent.toFixed(2)}%</td></tr>`)));card.querySelector('tfoot').appendChild(U.el(`<tr style="font-weight:700;background:#f7f9fe"><td colspan="3" style="text-align:right">รวม ${rs.length} โครงการ</td><td class="num">${money(t.received)}</td><td colspan="6"></td><td class="num">${money(t.spent)}</td><td colspan="4"></td><td class="num">${money(t.remain)}</td><td class="num">${t.percent.toFixed(2)}%</td></tr>`));return card;}
+  function printSheet(rs,s){const t=totals(rs),sheet=U.el(`<div class="print-only sheet project-report"><style>@media print{@page{size:A4 landscape;margin:7mm}.project-report{width:100%;font-size:8px}.project-report table.reg{font-size:7px}.project-report table.reg th,.project-report table.reg td{padding:2px 3px}}</style><div class="doc-head"><div class="fy">ปีงบประมาณ ${Store.getFY()}</div><img class="doc-logo" src="assets/logo.png" alt=""><div class="t1">รายงานงบโครงการ</div><div class="t2">${U.esc(s.name||'')} ${U.esc(s.district||'')} จังหวัด${U.esc(s.province||'')}</div></div></div>`),table=U.el(`<table class="reg"><thead><tr>${headers().map(h=>`<th>${h.replace('จำนวนที่ใช้ในรอบที่','ใช้รอบ').replace('จัดสรรรอบที่','จัดสรร')}</th>`).join('')}</tr></thead><tbody></tbody></table>`),b=table.querySelector('tbody');rs.forEach(r=>b.appendChild(U.el(`<tr>${values(r).map((v,i)=>`<td class="${i===0?'c':i>2?'num':''}">${i===1||i===2?U.esc(v):i>2?money(v):v}</td>`).join('')}</tr>`)));b.appendChild(U.el(`<tr class="sum"><td colspan="3" class="c">รวมทั้งสิ้น</td><td class="num">${money(t.received)}</td><td colspan="6"></td><td class="num">${money(t.spent)}</td><td colspan="4"></td><td class="num">${money(t.remain)}</td><td class="num">${t.percent.toFixed(2)}</td></tr>`));sheet.appendChild(table);if(window.TxnEditor?.signRow)sheet.appendChild(window.TxnEditor.signRow(s));return sheet;}
+  const csvCell=v=>{const s=String(v==null?'':v);return/[",\n\r]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;};
+  function download(name,data){const blob=new Blob([String.fromCharCode(0xFEFF)+data.map(r=>r.map(csvCell).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);}
+  function template(){download('แม่แบบรายงานงบโครงการ.csv',[headers(),[1,'โครงการตัวอย่าง','กิจกรรมตัวอย่าง',100000,20000,20000,20000,20000,10000,10000,45000,10000,12000,13000,10000,55000,45]]);U.toast('ดาวน์โหลดไฟล์ตัวอย่างแล้ว');}
+  async function importCSV(file){if(!window.XLSX){U.toast('ยังโหลดตัวอ่านไฟล์ไม่สำเร็จ','err');return;}let a;try{const buf=await file.arrayBuffer(),wb=XLSX.read(new Uint8Array(buf),{type:'array'});a=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,blankrows:false,defval:''});}catch(e){U.toast('อ่านไฟล์ไม่สำเร็จ: '+(e.message||e),'err');return;}if(!a||a.length<2){U.toast('ไฟล์ว่าง','err');return;}const hs=a[0].map(h=>String(h||'').toLowerCase().trim()),idx={};COLS.forEach(c=>idx[c[0]]=hs.findIndex(h=>c[2].some(m=>h.includes(m.toLowerCase()))));if(idx.project<0){U.toast('ไม่พบคอลัมน์ “ชื่อโครงการ”','err');return;}const get=(r,k)=>idx[k]>=0?r[idx[k]]:'',items=a.slice(1).map(r=>{const name=String(get(r,'project')||'').trim();if(!name)return null;const sr=Array.from({length:4},(_,i)=>num(get(r,`s${i+1}`))),sv=get(r,'spent');return{name,budget:num(get(r,'received')),activity:String(get(r,'activity')||'').trim(),allocations:Array.from({length:6},(_,i)=>num(get(r,`a${i+1}`))),spentRounds:sr,spent:sv===''?sr.reduce((x,y)=>x+y,0):num(sv)};}).filter(Boolean);if(!items.length){U.toast('ไม่พบข้อมูลโครงการ','err');return;}App.confirmDialog(`พบ ${items.length} รายการ — ยืนยันนำเข้า? รายการเดิมที่ชื่อโครงการและกิจกรรมตรงกันจะถูกอัปเดต`,async()=>{try{const fy=Store.getFY(),existing=Store.projectsFY(),used=new Set();let added=0,updated=0;for(const x of items){const found=existing.find(p=>!used.has(p.id)&&(p.name||'').trim()===x.name&&meta(p.note).activity===x.activity),m={activity:x.activity,allocations:x.allocations,spentRounds:x.spentRounds,importedSpent:x.spent,note:found?meta(found.note).note:''};if(found){used.add(found.id);await Store.update('projects',found.id,{budget:x.budget,budget_adjust:0,note:encode(m)});updated++;}else{await Store.insert('projects',{name:x.name,budget:x.budget,budget_adjust:0,note:encode(m),fiscal_year:fy,sort:(existing.length+added+1)*10,active:true});added++;}}U.toast(`นำเข้าแล้ว: เพิ่ม ${added} / อัปเดต ${updated}`);await Store.loadAll();App.go('report-projects');}catch(e){U.toast('นำเข้าไม่สำเร็จ: '+(e.message||e),'err');}},{danger:false,yes:'นำเข้า'});}
+  function excel(rs,s){const data=[[`รายงานงบโครงการ ${s.name||''} ปีงบประมาณ ${Store.getFY()}`],[],headers(),...rs.map(values)];Exporter.download('รายงานงบโครงการ.xlsx','งบโครงการ',data,{cols:[5,30,28,...Array(14).fill(15)],numCols:Array.from({length:14},(_,i)=>i+3),merges:['A1:Q1']});}
+  App.register('report-projects',{title:'รายงานงบโครงการ',subtitle:'นำเข้าโครงการทั้งโรงเรียน ติดตามรอบจัดสรร รอบใช้จ่าย คงเหลือ และส่งออก PDF',render});
 })();
