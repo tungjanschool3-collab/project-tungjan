@@ -67,6 +67,7 @@
     c.appendChild(tools);
 
     c.appendChild(buildSheet(acc, filterMonth, s));
+    c.appendChild(buildActivitySummary(acc, filterMonth));
   }
 
   // สร้างข้อมูลแถวของเดือน (ใช้ทั้งแสดงและ export)
@@ -89,6 +90,58 @@
       cumTotals: { rin: endAll.rin, rout: endAll.rout }, endBal: endAll.b };
   }
   function nextYm(m) { const [y, mo] = m.split('-').map(Number); const d = new Date(y, mo, 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; }
+
+  // รวมยอดรายการรับ-จ่ายของกิจกรรมย่อยในบัญชีและเดือนที่เลือก
+  function activityName(t) {
+    const line = String(t.notes || '').split('\n').find(x => x.startsWith('[กิจกรรม] '));
+    return line ? line.slice('[กิจกรรม] '.length).trim() : '';
+  }
+
+  function activityTotals(acc, m) {
+    const grouped = new Map();
+    accTxns(acc.id).filter(t => U.ymOf(t.txn_date) === m).forEach(t => {
+      const activity = activityName(t);
+      if (!activity) return;
+      const project = String(t.project || 'ไม่ระบุโครงการ').trim();
+      const key = `${project}\u0000${activity}`;
+      const row = grouped.get(key) || { project, activity, amountIn: 0, amountOut: 0 };
+      row.amountIn += Number(t.amount_in || 0);
+      row.amountOut += Number(t.amount_out || 0);
+      grouped.set(key, row);
+    });
+    return Array.from(grouped.values()).sort((a, b) =>
+      a.project.localeCompare(b.project, 'th') || a.activity.localeCompare(b.activity, 'th'));
+  }
+
+  function buildActivitySummary(acc, m) {
+    const rows = activityTotals(acc, m);
+    const card = U.el(`<div class="card">
+      <h3>สรุปเงินตามกิจกรรม</h3>
+      <div class="sub">รวมยอดกิจกรรมย่อยของบัญชี ${U.esc(acc.name)} ประจำเดือน ${U.thaiMonthYear(m)}</div>
+      <div class="table-wrap"><table class="data"><thead><tr>
+        <th>โครงการ</th><th>กิจกรรมย่อย</th><th class="num">รับ</th><th class="num">จ่าย</th><th class="num">สุทธิ</th>
+      </tr></thead><tbody></tbody><tfoot></tfoot></table></div>
+    </div>`);
+    const tb = card.querySelector('tbody');
+    if (!rows.length) {
+      tb.appendChild(U.el('<tr><td colspan="5"><div class="empty">ยังไม่มีรายการที่ระบุกิจกรรมในเดือนนี้</div></td></tr>'));
+    } else {
+      rows.forEach(r => tb.appendChild(U.el(`<tr>
+        <td>${U.esc(r.project)}</td><td>${U.esc(r.activity)}</td>
+        <td class="num money-in">${U.money0(r.amountIn)}</td>
+        <td class="num money-out">${U.money0(r.amountOut)}</td>
+        <td class="num"><b>${U.money(r.amountIn - r.amountOut)}</b></td>
+      </tr>`)));
+    }
+    const totalIn = rows.reduce((sum, r) => sum + r.amountIn, 0);
+    const totalOut = rows.reduce((sum, r) => sum + r.amountOut, 0);
+    card.querySelector('tfoot').appendChild(U.el(`<tr class="sum">
+      <td colspan="2" class="c">รวมทุกกิจกรรม</td>
+      <td class="num">${U.money(totalIn)}</td><td class="num">${U.money(totalOut)}</td>
+      <td class="num">${U.money(totalIn - totalOut)}</td>
+    </tr>`));
+    return card;
+  }
 
   function buildSheet(acc, m, s) {
     const data = computeMonth(acc, m);
