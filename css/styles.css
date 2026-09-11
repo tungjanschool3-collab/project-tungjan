@@ -167,10 +167,10 @@ table.reg tr.sum td{font-weight:700;background:#fafafa}
 .print-only{display:none}
 .daily-balance-page{max-width:794px;margin:0 auto;background:#fff;color:#111;font-family:'TH Sarabun New','Sarabun',sans-serif}
 .daily-balance-page .report-top{position:relative;text-align:center;margin-bottom:7px;line-height:1.25}
-.daily-balance-page .report-fy{position:absolute;right:0;top:0;font-size:13px}
-.daily-balance-page .report-org{font-size:15px;padding-top:24px}
-.daily-balance-page .report-title{font-size:18px;font-weight:700}
-.daily-balance-page .report-date{font-size:14px;margin-top:4px}
+.daily-balance-page .report-fy{position:absolute;right:0;top:0;font-size:15px}
+.daily-balance-page .report-org{font-size:20px;padding-top:24px}
+.daily-balance-page .report-title{font-size:20px;font-weight:700}
+.daily-balance-page .report-date{font-size:20px;margin-top:4px}
 .daily-balance-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:16px}
 .daily-balance-table th,.daily-balance-table td{border:1px solid #111;padding:2px 4px;line-height:1.2;overflow-wrap:anywhere}
 .daily-balance-table th{text-align:center;font-weight:700;background:#f6f7f3}
@@ -180,7 +180,7 @@ table.reg tr.sum td{font-weight:700;background:#fafafa}
 .daily-report-note{white-space:pre-line;text-align:center;vertical-align:top!important;line-height:1.5!important}
 .daily-note-field{min-width:300px;flex:1}
 .daily-note-field textarea{min-height:74px;resize:vertical}
-.daily-balance-words{text-align:center;font-size:16px;margin:8px 0 4px}
+.daily-balance-words{text-align:center;font-size:20px;margin:8px 0 4px}
 .daily-balance-signatures{font-size:16px;margin-top:10px;text-align:center;line-height:1.35}
 .daily-balance-signatures .sign-two{display:grid;grid-template-columns:1fr 1fr;gap:45px;margin:5px 35px 12px}
 .daily-balance-signatures .sign-one{max-width:330px;margin:12px auto 0}
@@ -205,7 +205,8 @@ table.reg tr.sum td{font-weight:700;background:#fafafa}
   .daily-balance-page{page:dailyPortrait;width:190mm;max-width:190mm;padding:0!important}
   .daily-balance-table{font-size:12pt}
   .daily-balance-table th,.daily-balance-table td{padding:.8mm 1.2mm}
-  .daily-balance-words,.daily-balance-signatures{font-size:12pt}
+  .daily-balance-words{font-size:15pt}
+  .daily-balance-signatures{font-size:12pt}
   .daily-balance-signatures{break-inside:avoid;page-break-inside:avoid}
 }
 /* ทะเบียนที่พิมพ์แนวตั้ง */
