@@ -104,8 +104,8 @@
         <div class="report-org">ส่วนราชการ ${U.esc(s.name || '')}</div>
         <div class="report-title">รายงานเงินคงเหลือประจำวัน</div>
         <div class="report-date">ประจำวันที่ ${U.thaiDate(date, { full: true, fullYear: true })}</div></div>
-      <table class="daily-balance-table"><thead><tr><th style="width:34%">ประเภท</th><th style="width:13%">เงินสด</th>
-        <th style="width:15%">เงินฝากธนาคาร</th><th style="width:16%">เงินฝาก<br>ส่วนราชการผู้เบิก</th><th style="width:13%">รวม</th><th>หมายเหตุ</th></tr></thead><tbody></tbody></table>
+    <table class="daily-balance-table"><thead><tr><th style="width:32%">ประเภท</th><th style="width:12%">เงินสด</th>
+        <th style="width:15%">เงินฝากธนาคาร</th><th style="width:12%">เงินฝาก<br>ส่วนราชการผู้เบิก</th><th style="width:12%">รวม</th><th style="width:17%">หมายเหตุ</th></tr></thead><tbody></tbody></table>
       <div class="daily-balance-words"><b>รวมเป็นเงิน</b>&nbsp;&nbsp; (${U.esc(thaiBahtText(grand.total))})</div>
       <div class="daily-balance-signatures"><div class="sign-two">
         <div>ลงชื่อ........................................ ผู้จัดทำรายการ<br>(${U.esc(s.finance_officer || '')})<br>ตำแหน่ง ครู</div>
@@ -120,8 +120,8 @@
       body.appendChild(U.el(`<tr class="section"><td colspan="6">${label}</td></tr>`));
       if (!group.length) body.appendChild(U.el('<tr><td>ไม่มีรายการ</td><td class="num">-</td><td class="num">-</td><td class="num">-</td><td class="num">-</td><td></td></tr>'));
       group.forEach((r, i) => body.appendChild(U.el(`<tr><td>${U.esc(r.name)}</td><td class="num">${U.money0(r.cash) || '-'}</td>
-        <td class="num">${U.money0(r.bank) || '-'}</td><td class="num">${U.money0(r.gov) || '-'}</td><td class="num">${U.money0(r.total) || '-'}</td>${showNote && i === 0
-          ? `<td class="daily-report-note" rowspan="${group.length}">${U.esc(reportNote)}</td>` : showNote ? '' : '<td></td>'}</tr>`)));
+        <td class="num">${U.money0(r.bank) || '-'}</td><td class="num">${U.money0(r.gov) || '-'}</td><td class="num">${U.money0(r.total) || '-'}</td>${showNote
+          ? `<td class="daily-report-note">${U.esc(String(reportNote || '').split(String.fromCharCode(10))[i] || '')}</td>` : showNote ? '' : '<td></td>'}</tr>`)));
     });
     body.appendChild(U.el(`<tr class="total"><td class="c">รวมเป็นเงิน</td><td class="num">${U.money(grand.cash)}</td><td class="num">${U.money(grand.bank)}</td>
       <td class="num">${U.money(grand.gov)}</td><td class="num">${U.money(grand.total)}</td><td></td></tr>`));
