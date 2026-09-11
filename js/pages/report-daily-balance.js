@@ -5,9 +5,33 @@
   let reportDate = U.todayISO();
 
   function normalize(v) { return String(v || '').toLowerCase().replace(/\s+/g, ''); }
+  const REPORT_NAMES = [
+    ['เงินรายได้แผ่นดิน', ['raidai_pandin', 'รายได้แผ่นดิน']],
+    ['ดอกเบี้ยเงินอุดหนุน', ['ดอกเบี้ยเงินอุดหนุน']],
+    ['ดอกเบี้ยเงินอาหารกลางวัน', ['ดอกเบี้ยเงินอาหารกลางวัน', 'ดอกเบี้ยอาหารกลางวัน']],
+    ['ภาษีหัก ณ ที่จ่าย', ['ภาษีหักณที่จ่าย', 'ภาษีหัก']],
+    ['เงินประกันสัญญา (เงินส่วนราชการเป็นผู้เบิก)', ['เงินประกันสัญญา', 'ประกันสัญญา']],
+    ['เงินรายได้สถานศึกษา', ['raidai', 'เงินรายได้สถานศึกษา', 'รายได้สถานศึกษา']],
+    ['เงินบริจาคกองทุนเพื่อการศึกษา', ['kongtun', 'เงินบริจาคกองทุน', 'กองทุนเพื่อการศึกษา']],
+    ['เงินอุดหนุนรายหัวอนุบาล', ['anuban_udnun', 'อนุบาลอุดหนุน', 'อุดหนุนรายหัวอนุบาล']],
+    ['เงินอุดหนุนรายหัวประถม', ['prathom_udnun', 'ประถมอุดหนุน', 'อุดหนุนรายหัวประถม']],
+    ['เงินกิจกรรมพัฒนาผู้เรียน', ['pattana', 'กิจกรรมพัฒนาผู้เรียน']],
+    ['เงินค่าหนังสือเรียน', ['book', 'หนังสือเรียน']],
+    ['เงินค่าเครื่องแบบนักเรียน', ['uniform', 'เครื่องแบบนักเรียน']],
+    ['เงินค่าอุปกรณ์การเรียน', ['upakorn', 'อุปกรณ์การเรียน']],
+    ['เงินอุดหนุนปัจจัยพื้นฐานนักเรียนยากจน', ['yakjon', 'ปัจจัยพื้นฐานนักเรียนยากจน']],
+    ['เงินอุดหนุนนักเรียนยากจนพิเศษแบบมีเงื่อนไข', ['yakjon_special', 'ยากจนพิเศษ', 'แบบมีเงื่อนไข']],
+    ['เงินอุดหนุนโครงการอาหารกลางวัน', ['ahan_klangwan', 'โครงการอาหารกลางวัน', 'อาหารกลางวัน']],
+  ];
+  function officialName(a) {
+    const text = normalize(`${a.code || ''} ${a.name || ''}`);
+    return (REPORT_NAMES.find(([, keys]) => keys.some(k => text.includes(normalize(k)))) || [a.name || 'ไม่ระบุชื่อบัญชี'])[0];
+  }
   function isBudgetAccount(a) {
     const text = normalize(`${a.category || ''} ${a.name || ''} ${a.code || ''}`);
-    return text.includes('เงินงบประมาณ') || text.includes('budget');
+    return text.includes('เงินงบประมาณ') || text.includes('budget') || text.includes('รายได้แผ่นดิน') ||
+      text.includes('raidai_pandin') || text.includes('ดอกเบี้ยเงินอุดหนุน') || text.includes('ดอกเบี้ยอาหารกลางวัน') ||
+      text.includes('ดอกเบี้ยเงินอาหารกลางวัน');
   }
 
   function rowsAt(date) {
@@ -31,6 +55,19 @@
   function totals(rows) {
     return rows.reduce((s, r) => ({ cash: s.cash + r.cash, bank: s.bank + r.bank,
       gov: s.gov + r.gov, total: s.total + r.total }), { cash: 0, bank: 0, gov: 0, total: 0 });
+  }
+
+  function groupedRows(rows) {
+    const grouped = new Map();
+    rows.forEach(r => {
+      const name = officialName(r.account);
+      const key = `${isBudgetAccount(r.account) ? 'budget' : 'other'}|${name}`;
+      if (!grouped.has(key)) grouped.set(key, { account: r.account, name, budget: isBudgetAccount(r.account), cash: 0, bank: 0, gov: 0, total: 0 });
+      const g = grouped.get(key);
+      g.cash += r.cash; g.bank += r.bank; g.gov += r.gov; g.total += r.total;
+    });
+    const order = new Map(REPORT_NAMES.map(([name], i) => [name, i]));
+    return [...grouped.values()].sort((a, b) => (order.get(a.name) ?? 999) - (order.get(b.name) ?? 999) || Number(a.account.sort || 0) - Number(b.account.sort || 0));
   }
 
   function thaiBahtText(value) {
@@ -60,7 +97,7 @@
   }
 
   function reportNode(date) {
-    const s = Store.data().school || {}, rows = rowsAt(date), grand = totals(rows);
+    const s = Store.data().school || {}, rows = groupedRows(rowsAt(date)), grand = totals(rows);
     const node = U.el(`<section class="daily-balance-page" id="dailyBalanceDocument">
       <div class="report-top"><div class="report-fy">ปีงบประมาณ ${Store.getFY()}</div>
         <div class="report-org">ส่วนราชการ ${U.esc(s.name || '')}</div>
@@ -72,7 +109,7 @@
       <div class="daily-balance-signatures"><div class="sign-two">
         <div>ลงชื่อ........................................ ผู้จัดทำรายการ<br>(${U.esc(s.finance_officer || '')})<br>ตำแหน่ง ครู</div>
         <div>ลงชื่อ........................................ ผู้ตรวจ<br>(${U.esc(s.auditor || '')})<br>ตำแหน่ง ครู</div></div>
-        <div>คณะกรรมการเก็บรักษาเงินได้ตรวจนับเงินสดคงเหลือประจำวันถูกต้องตามรายงานข้างต้นแล้ว</div>
+        <div>คณะกรรมการเก็บรักษาเงินได้ตรวจนับเงินสดคงเหลือประจำวันถูกต้อง ตามรายการข้างต้นแล้ว และได้นำเงินสดเก็บรักษาไว้ในตู้นิรภัยเป็นที่เรียบร้อยแล้ว</div>
         <div class="committee">${[1,2,3].map(() => '<div><div class="line"></div>กรรมการ</div>').join('')}</div>
         <div class="sign-one">ลงชื่อ........................................ หัวหน้าหน่วยงานย่อย<br>(${U.esc(s.director || '')})<br>ตำแหน่ง ผู้อำนวยการ${U.esc(s.name || 'โรงเรียน')}</div></div>
     </section>`);
@@ -81,7 +118,7 @@
       ['เงินนอกงบประมาณ', rows.filter(r => !isBudgetAccount(r.account))]].forEach(([label, group]) => {
       body.appendChild(U.el(`<tr class="section"><td colspan="6">${label}</td></tr>`));
       if (!group.length) body.appendChild(U.el('<tr><td>ไม่มีรายการ</td><td class="num">-</td><td class="num">-</td><td class="num">-</td><td class="num">-</td><td></td></tr>'));
-      group.forEach(r => body.appendChild(U.el(`<tr><td>${U.esc(r.account.name)}</td><td class="num">${U.money0(r.cash) || '-'}</td>
+      group.forEach(r => body.appendChild(U.el(`<tr><td>${U.esc(r.name)}</td><td class="num">${U.money0(r.cash) || '-'}</td>
         <td class="num">${U.money0(r.bank) || '-'}</td><td class="num">${U.money0(r.gov) || '-'}</td><td class="num">${U.money0(r.total) || '-'}</td><td></td></tr>`)));
     });
     body.appendChild(U.el(`<tr class="total"><td class="c">รวมเป็นเงิน</td><td class="num">${U.money(grand.cash)}</td><td class="num">${U.money(grand.bank)}</td>
