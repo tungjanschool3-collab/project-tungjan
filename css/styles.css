@@ -170,7 +170,7 @@ table.reg tr.sum td{font-weight:700;background:#fafafa}
 .daily-balance-page{max-width:794px;margin:0 auto;background:#fff;color:#111;font-family:'TH Sarabun New','Sarabun',sans-serif}
 .daily-balance-page .report-top{position:relative;text-align:center;margin-bottom:7px;line-height:1.25}
 .daily-balance-page .report-fy{position:absolute;right:0;top:0;font-size:15px}
-.daily-balance-page .report-org{font-size:20px;padding-top:24px}
+.daily-balance-page .report-org{font-size:20px;font-weight:700;padding-top:24px}
 .daily-balance-page .report-title{font-size:20px;font-weight:700}
 .daily-balance-page .report-date{font-size:20px;font-weight:700;margin-top:4px}
 .daily-balance-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:16px}
