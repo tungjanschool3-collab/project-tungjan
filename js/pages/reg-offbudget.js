@@ -130,7 +130,7 @@
 
   function buildActivitySummary(acc, m) {
     const rows = activityTotals(acc, m);
-    const card = U.el(`<div class="card">
+    const card = U.el(`<div class="card activity-summary-page">
       <h3>สรุปเงินตามกิจกรรม</h3>
       <div class="sub">รวมยอดกิจกรรมย่อยของบัญชี ${U.esc(acc.name)} · ${U.thaiMonthYear(m)}</div>
       <div class="table-wrap"><table class="data"><thead><tr>
