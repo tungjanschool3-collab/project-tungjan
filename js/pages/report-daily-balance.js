@@ -3,6 +3,7 @@
 // ============================================================
 (function () {
   let reportDate = U.todayISO();
+  let reportNote = '';
 
   function normalize(v) { return String(v || '').toLowerCase().replace(/\s+/g, ''); }
   const REPORT_NAMES = [
@@ -114,12 +115,13 @@
         <div class="sign-one">ลงชื่อ........................................ หัวหน้าหน่วยงานย่อย<br>(${U.esc(s.director || '')})<br>ตำแหน่ง ผู้อำนวยการ${U.esc(s.name || 'โรงเรียน')}</div></div>
     </section>`);
     const body = node.querySelector('tbody');
-    [['เงินงบประมาณ', rows.filter(r => isBudgetAccount(r.account))],
-      ['เงินนอกงบประมาณ', rows.filter(r => !isBudgetAccount(r.account))]].forEach(([label, group]) => {
+    [['เงินงบประมาณ', rows.filter(r => isBudgetAccount(r.account)), false],
+      ['เงินนอกงบประมาณ', rows.filter(r => !isBudgetAccount(r.account)), true]].forEach(([label, group, showNote]) => {
       body.appendChild(U.el(`<tr class="section"><td colspan="6">${label}</td></tr>`));
       if (!group.length) body.appendChild(U.el('<tr><td>ไม่มีรายการ</td><td class="num">-</td><td class="num">-</td><td class="num">-</td><td class="num">-</td><td></td></tr>'));
-      group.forEach(r => body.appendChild(U.el(`<tr><td>${U.esc(r.name)}</td><td class="num">${U.money0(r.cash) || '-'}</td>
-        <td class="num">${U.money0(r.bank) || '-'}</td><td class="num">${U.money0(r.gov) || '-'}</td><td class="num">${U.money0(r.total) || '-'}</td><td></td></tr>`)));
+      group.forEach((r, i) => body.appendChild(U.el(`<tr><td>${U.esc(r.name)}</td><td class="num">${U.money0(r.cash) || '-'}</td>
+        <td class="num">${U.money0(r.bank) || '-'}</td><td class="num">${U.money0(r.gov) || '-'}</td><td class="num">${U.money0(r.total) || '-'}</td>${showNote && i === 0
+          ? `<td class="daily-report-note" rowspan="${group.length}">${U.esc(reportNote)}</td>` : showNote ? '' : '<td></td>'}</tr>`)));
     });
     body.appendChild(U.el(`<tr class="total"><td class="c">รวมเป็นเงิน</td><td class="num">${U.money(grand.cash)}</td><td class="num">${U.money(grand.bank)}</td>
       <td class="num">${U.money(grand.gov)}</td><td class="num">${U.money(grand.total)}</td><td></td></tr>`));
@@ -137,11 +139,13 @@
 
   function render(c) {
     const toolbar = U.el(`<div class="toolbar no-print"><div class="field"><label>วันที่รายงาน</label><input type="date" id="balanceDate" value="${reportDate}"></div>
+      <div class="field daily-note-field"><label>หมายเหตุ (พิมพ์แยกบรรทัดได้)</label><textarea id="balanceNote" rows="3" placeholder="เช่น ไม่มีการรับจ่ายเงิน&#10;15 ส.ค. 69&#10;ถึง&#10;27 ส.ค. 69&#10;(ชื่อผู้รับผิดชอบ)"></textarea></div>
       <button class="btn ghost" id="refreshBalance">🔄 คำนวณใหม่</button><div class="spacer"></div>
       <button class="btn print" id="printBalance">🖨️ พิมพ์ A4</button><button class="btn primary" id="pdfBalance">⬇️ ดาวน์โหลด PDF</button></div>`);
     const card = U.el('<div class="card daily-balance-card"></div>');
     const rebuild = () => { card.innerHTML = ''; card.appendChild(reportNode(reportDate)); };
     toolbar.querySelector('#balanceDate').onchange = e => { reportDate = e.target.value || U.todayISO(); rebuild(); };
+    toolbar.querySelector('#balanceNote').oninput = e => { reportNote = e.target.value; rebuild(); };
     toolbar.querySelector('#refreshBalance').onclick = async () => { await App.reload(true); rebuild(); U.toast('ซิงค์และคำนวณยอดใหม่แล้ว'); };
     toolbar.querySelector('#printBalance').onclick = () => window.print();
     toolbar.querySelector('#pdfBalance').onclick = () => downloadPdf(card.querySelector('#dailyBalanceDocument'));
