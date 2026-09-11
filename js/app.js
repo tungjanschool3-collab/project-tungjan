@@ -17,6 +17,7 @@ window.App = (function () {
     { key: 'reg-offbudget', icon: '📙', label: 'เงินนอกงบประมาณ' },
     { key: 'reg-utility', icon: '💡', label: 'ค่าน้ำ-ไฟ-โทรศัพท์' },
     { group: 'รายงาน' },
+    { key: 'report-daily-balance', icon: '📄', label: 'รายงานเงินคงเหลือประจำวัน' },
     { key: 'report-projects', icon: '📊', label: 'รายงานงบโครงการ' },
     { group: 'ตั้งค่า' },
     { key: 'settings', icon: '⚙️', label: 'ข้อมูลหลัก' },
