@@ -201,6 +201,7 @@ table.reg tr.sum td{font-weight:700;background:#fafafa}
   table.reg.offbudget-reg{font-size:13pt}
   table.reg th{background:#eee!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .page-break{page-break-after:always}
+  .activity-summary-page{break-before:page;page-break-before:always}
   .daily-print-sheet{page:dailyPortrait}
   .daily-balance-page{page:dailyPortrait;width:190mm;max-width:190mm;padding:0!important}
   .daily-balance-table{font-size:12pt}
