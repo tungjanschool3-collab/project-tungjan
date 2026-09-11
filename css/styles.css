@@ -180,6 +180,15 @@ table.reg tr.sum td{font-weight:700;background:#fafafa}
 .daily-report-note{white-space:pre-line;text-align:center;vertical-align:top!important;line-height:1.5!important}
 .daily-note-field{min-width:300px;flex:1}
 .daily-note-field textarea{min-height:74px;resize:vertical}
+.daily-mapping-panel{margin-top:16px}
+.daily-mapping-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:12px}
+.daily-mapping-head h3{margin-bottom:3px}
+.daily-mapping-table{min-width:980px}
+.daily-mapping-table th:nth-child(1){width:18%}
+.daily-mapping-table th:nth-child(2){width:22%}
+.daily-mapping-table th:nth-child(3){width:22%}
+.daily-mapping-table select,.daily-mapping-table input{width:100%;min-width:180px}
+.mapping-hint{margin-top:10px;padding:10px 12px;border-radius:8px;background:#f1f5f9;color:#475569;font-size:13px}
 .daily-balance-words{text-align:center;font-size:20px;margin:8px 0 4px}
 .daily-balance-signatures{font-size:16px;margin-top:10px;text-align:center;line-height:1.35}
 .daily-balance-signatures .sign-two{display:grid;grid-template-columns:1fr 1fr;gap:45px;margin:5px 35px 12px}

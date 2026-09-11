@@ -24,11 +24,24 @@
     ['เงินอุดหนุนนักเรียนยากจนพิเศษแบบมีเงื่อนไข', ['yakjon_special', 'ยากจนพิเศษ', 'แบบมีเงื่อนไข']],
     ['เงินอุดหนุนโครงการอาหารกลางวัน', ['ahan_klangwan', 'โครงการอาหารกลางวัน', 'อาหารกลางวัน']],
   ];
-  function officialName(a) {
+  const MAPPING_KEY = 'dailyBalanceAccountMapping';
+  function mappingData() {
+    try { return JSON.parse(localStorage.getItem(MAPPING_KEY) || '{}'); } catch (e) { return {}; }
+  }
+  function saveMapping(data) {
+    localStorage.setItem(MAPPING_KEY, JSON.stringify(data));
+  }
+  function inferredName(a) {
     const text = normalize(`${a.code || ''} ${a.name || ''}`);
     return (REPORT_NAMES.find(([, keys]) => keys.some(k => text.includes(normalize(k)))) || [a.name || 'ไม่ระบุชื่อบัญชี'])[0];
   }
+  function officialName(a) {
+    const setting = mappingData()[a.id] || {};
+    return String(setting.label || setting.target || inferredName(a)).trim();
+  }
   function isBudgetAccount(a) {
+    const target = (mappingData()[a.id] || {}).target;
+    if (target) return REPORT_NAMES.slice(0, 3).some(([name]) => name === target);
     const text = normalize(`${a.category || ''} ${a.name || ''} ${a.code || ''}`);
     return text.includes('เงินงบประมาณ') || text.includes('budget') || text.includes('รายได้แผ่นดิน') ||
       text.includes('raidai_pandin') || text.includes('ดอกเบี้ยเงินอุดหนุน') || text.includes('ดอกเบี้ยอาหารกลางวัน') ||
@@ -115,17 +128,57 @@
         <div class="sign-one">ลงชื่อ........................................ หัวหน้าหน่วยงานย่อย<br>(${U.esc(s.director || '')})<br>ตำแหน่ง ผู้อำนวยการ${U.esc(s.name || 'โรงเรียน')}</div></div>
     </section>`);
     const body = node.querySelector('tbody');
+    const noteLines = String(reportNote || '').split(/\r?\n/);
     [['เงินงบประมาณ', rows.filter(r => isBudgetAccount(r.account)), false],
       ['เงินนอกงบประมาณ', rows.filter(r => !isBudgetAccount(r.account)), true]].forEach(([label, group, showNote]) => {
       body.appendChild(U.el(`<tr class="section"><td colspan="6">${label}</td></tr>`));
       if (!group.length) body.appendChild(U.el('<tr><td>ไม่มีรายการ</td><td class="num">-</td><td class="num">-</td><td class="num">-</td><td class="num">-</td><td></td></tr>'));
-      group.forEach((r, i) => body.appendChild(U.el(`<tr><td>${U.esc(r.name)}</td><td class="num">${U.money0(r.cash) || '-'}</td>
-        <td class="num">${U.money0(r.bank) || '-'}</td><td class="num">${U.money0(r.gov) || '-'}</td><td class="num">${U.money0(r.total) || '-'}</td>${showNote
-          ? `<td class="daily-report-note">${U.esc(String(reportNote || '').split(String.fromCharCode(10))[i] || '')}</td>` : showNote ? '' : '<td></td>'}</tr>`)));
+      group.forEach((r, i) => {
+        const note = showNote ? (i === group.length - 1 ? noteLines.slice(i).join('\n') : (noteLines[i] || '')) : '';
+        body.appendChild(U.el(`<tr><td>${U.esc(r.name)}</td><td class="num">${U.money0(r.cash) || '-'}</td>
+          <td class="num">${U.money0(r.bank) || '-'}</td><td class="num">${U.money0(r.gov) || '-'}</td><td class="num">${U.money0(r.total) || '-'}</td>
+          <td class="daily-report-note">${U.esc(note)}</td></tr>`));
+      });
     });
     body.appendChild(U.el(`<tr class="total"><td class="c">รวมเป็นเงิน</td><td class="num">${U.money(grand.cash)}</td><td class="num">${U.money(grand.bank)}</td>
       <td class="num">${U.money(grand.gov)}</td><td class="num">${U.money(grand.total)}</td><td></td></tr>`));
     return node;
+  }
+
+  function mappingPanel(date, rebuild) {
+    const rows = rowsAt(date), saved = mappingData();
+    const panel = U.el(`<div class="card no-print daily-mapping-panel">
+      <div class="daily-mapping-head"><div><h3>ตั้งค่าบัญชีโรงเรียนสำหรับรายงาน</h3>
+        <div class="sub">แก้ชื่อที่แสดงและเลือกว่าบัญชีแต่ละเล่มต้องไปรวมในรายการใด ตัวเลขด้านล่างเป็นยอดตามสมุดบัญชีถึงวันที่รายงาน</div></div>
+        <button class="btn ghost sm" id="resetMapping">คืนค่าจับคู่อัตโนมัติ</button></div>
+      <div class="table-wrap"><table class="data daily-mapping-table"><thead><tr>
+        <th>บัญชีโรงเรียน</th><th>นำไปรวมในรายการ</th><th>ชื่อที่แสดงในรายงาน</th>
+        <th class="num">เงินสด</th><th class="num">เงินฝากธนาคาร</th><th class="num">ฝากส่วนราชการ</th><th class="num">รวม</th>
+      </tr></thead><tbody></tbody></table></div>
+      <div class="mapping-hint">การตั้งค่านี้ใช้จัดรายงานเท่านั้น ไม่เปลี่ยนชื่อบัญชีหรือยอดในสมุดบัญชี และส่วนนี้จะไม่แสดงตอนพิมพ์หรือดาวน์โหลด PDF</div>
+    </div>`);
+    const body = panel.querySelector('tbody');
+    rows.forEach(r => {
+      const current = saved[r.account.id] || {};
+      const target = current.target || inferredName(r.account);
+      const label = current.label || target;
+      const tr = U.el(`<tr><td><b>${U.esc(r.account.name || '')}</b><div class="sub">${U.esc(r.account.code || '')}</div></td>
+        <td><select class="mapping-target"></select></td>
+        <td><input class="mapping-label" value="${U.esc(label)}" aria-label="ชื่อที่แสดงของ ${U.esc(r.account.name || '')}"></td>
+        <td class="num">${U.money(r.cash)}</td><td class="num">${U.money(r.bank)}</td><td class="num">${U.money(r.gov)}</td><td class="num"><b>${U.money(r.total)}</b></td></tr>`);
+      const select = tr.querySelector('.mapping-target');
+      REPORT_NAMES.forEach(([name]) => select.appendChild(U.el(`<option value="${U.esc(name)}" ${name === target ? 'selected' : ''}>${U.esc(name)}</option>`)));
+      const storeRow = () => {
+        const data = mappingData();
+        data[r.account.id] = { target: select.value, label: tr.querySelector('.mapping-label').value.trim() || select.value };
+        saveMapping(data); rebuild();
+      };
+      select.onchange = () => { tr.querySelector('.mapping-label').value = select.value; storeRow(); };
+      tr.querySelector('.mapping-label').onchange = storeRow;
+      body.appendChild(tr);
+    });
+    panel.querySelector('#resetMapping').onclick = () => { localStorage.removeItem(MAPPING_KEY); rebuild(); U.toast('คืนค่าการจับคู่อัตโนมัติแล้ว'); };
+    return panel;
   }
 
   async function downloadPdf(node) {
@@ -143,13 +196,17 @@
       <button class="btn ghost" id="refreshBalance">🔄 คำนวณใหม่</button><div class="spacer"></div>
       <button class="btn print" id="printBalance">🖨️ พิมพ์ A4</button><button class="btn primary" id="pdfBalance">⬇️ ดาวน์โหลด PDF</button></div>`);
     const card = U.el('<div class="card daily-balance-card"></div>');
-    const rebuild = () => { card.innerHTML = ''; card.appendChild(reportNode(reportDate)); };
+    const mapping = U.el('<div></div>');
+    const rebuild = () => {
+      card.innerHTML = ''; card.appendChild(reportNode(reportDate));
+      mapping.innerHTML = ''; mapping.appendChild(mappingPanel(reportDate, rebuild));
+    };
     toolbar.querySelector('#balanceDate').onchange = e => { reportDate = e.target.value || U.todayISO(); rebuild(); };
     toolbar.querySelector('#balanceNote').oninput = e => { reportNote = e.target.value; rebuild(); };
     toolbar.querySelector('#refreshBalance').onclick = async () => { await App.reload(true); rebuild(); U.toast('ซิงค์และคำนวณยอดใหม่แล้ว'); };
     toolbar.querySelector('#printBalance').onclick = () => window.print();
     toolbar.querySelector('#pdfBalance').onclick = () => downloadPdf(card.querySelector('#dailyBalanceDocument'));
-    c.append(toolbar, card); rebuild();
+    c.append(toolbar, card, mapping); rebuild();
   }
 
   App.register('report-daily-balance', {
