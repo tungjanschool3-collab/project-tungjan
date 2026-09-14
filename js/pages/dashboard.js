@@ -11,6 +11,18 @@
     return bal;
   }
 
+  function mainAccountUsage(main, D) {
+    const ledgers = D.accounts.filter(a => a.school_account_id === main.id && a.active !== false);
+    const ledgerIds = new Set(ledgers.map(a => a.id));
+    const opening = ledgers.reduce((sum, a) => sum + Number(a.opening_cash || 0) + Number(a.opening_bank || 0) + Number(a.opening_govdeposit || 0) + Number(a.opening_debtor || 0), 0);
+    const txns = Store.txnsFY().filter(t => ledgerIds.has(t.account_id));
+    const received = txns.reduce((sum, t) => sum + Number(t.amount_in || 0), 0);
+    const spent = txns.reduce((sum, t) => sum + Number(t.amount_out || 0), 0);
+    const available = opening + received;
+    const percent = available > 0 ? (spent / available) * 100 : (spent > 0 ? 100 : 0);
+    return { ledgers, available, spent, remaining: available - spent, percent };
+  }
+
   function render(c) {
     const D = Store.data();
     const thisMonth = U.ymOf(U.todayISO());
@@ -26,6 +38,26 @@
       <div class="stat"><div class="lab">📤 จ่ายเดือนนี้</div><div class="val out">${U.money(mOut)}</div></div>
       <div class="stat"><div class="lab">📒 จำนวนบัญชี</div><div class="val bal">${D.accounts.length}</div></div>
     </div>`));
+
+    // ----- การใช้เงินแยกตามบัญชีหลัก -----
+    const usage = U.el(`<section class="card main-usage-section"><div class="main-usage-head"><div><span class="account-kicker">ภาพรวมบัญชีหลัก</span><h3>สัดส่วนการใช้เงิน</h3><p>คำนวณจากยอดจ่าย ÷ (ยอดยกมา + ยอดรับ) ของทะเบียนคุมในปีงบประมาณที่เลือก</p></div><span class="usage-fy">ปีงบประมาณ ${Store.getFY()}</span></div><div class="main-usage-grid"></div></section>`);
+    const usageGrid = usage.querySelector('.main-usage-grid');
+    const colors = [
+      ['#6d5dfc','#a78bfa'], ['#0ea5e9','#22d3ee'], ['#f97316','#fbbf24'],
+      ['#ec4899','#fb7185'], ['#14b8a6','#34d399'], ['#8b5cf6','#d946ef']
+    ];
+    if (!D.schoolAccounts.length) usageGrid.appendChild(U.el('<div class="empty main-usage-empty">ยังไม่มีบัญชีหลัก — เพิ่มได้ที่ “ข้อมูลหลัก”</div>'));
+    D.schoolAccounts.filter(a => a.active !== false).forEach((main, i) => {
+      const x = mainAccountUsage(main, D), shownPercent = Math.max(0, Math.min(100, x.percent)), labelPercent = Math.max(0, x.percent), palette = colors[i % colors.length];
+      const item = U.el(`<article class="main-usage-card" style="--usage:${shownPercent};--ring-a:${palette[0]};--ring-b:${palette[1]}">
+        <div class="usage-donut" role="img" aria-label="ใช้ไปแล้ว ${labelPercent.toFixed(1)} เปอร์เซ็นต์"><div><strong>${labelPercent.toFixed(1)}%</strong><span>ใช้ไปแล้ว</span></div></div>
+        <div class="usage-detail"><span class="usage-ledgers">${x.ledgers.length} ทะเบียนคุม</span><h4>${U.esc(main.name)}</h4>
+          <div class="usage-money"><div><span>วงเงินทั้งหมด</span><b>${U.money(x.available)}</b></div><div><span>ใช้ไปแล้ว</span><b class="spent">${U.money(x.spent)}</b></div><div><span>คงเหลือ</span><b class="${x.remaining < 0 ? 'over' : ''}">${U.money(x.remaining)}</b></div></div>
+        </div>
+      </article>`);
+      usageGrid.appendChild(item);
+    });
+    c.appendChild(usage);
 
     // ----- ทางลัด -----
     const quick = U.el(`<div class="card"><h3>ทางลัด</h3><div class="btn-row" style="margin-top:10px">
