@@ -36,26 +36,34 @@ window.App = (function () {
       const code = (window.APP_CONFIG && window.APP_CONFIG.ACCESS_CODE) || '044357246';
       if (inp.value.trim() === code) {
         sessionStorage.setItem('authed', '1');
-        enterApp();
+        enterApp(false);
       } else { err.textContent = 'รหัสไม่ถูกต้อง ลองอีกครั้ง'; inp.select(); }
     }
     // เข้าระบบอัตโนมัติถ้าล็อกอินไว้แล้วในเซสชันนี้
-    if (sessionStorage.getItem('authed') === '1') enterApp();
+    if (sessionStorage.getItem('authed') === '1') enterApp(false);
+    else if ((location.hash.replace('#', '') || 'dashboard') === 'dashboard') enterApp(true);
     else U.$('#loginScreen').style.display = 'flex';
   }
 
-  async function enterApp() {
+  async function enterApp(publicOnly = false) {
     U.$('#loginScreen').style.display = 'none';
     U.$('#app').style.display = 'block';
-    renderNav();
+    U.$('#app').classList.toggle('public-view', publicOnly);
+    renderNav(publicOnly);
     await reload(true);
     // ไปหน้าเริ่มต้น
-    const start = location.hash.replace('#', '') || 'dashboard';
+    const requested = location.hash.replace('#', '') || 'dashboard';
+    const start = publicOnly ? 'dashboard' : requested;
     go(pages[start] ? start : 'dashboard');
-    window.addEventListener('hashchange', () => {
+    if (!window.__appHashBound) window.addEventListener('hashchange', () => {
       const k = location.hash.replace('#', '');
-      if (k && pages[k] && k !== current) go(k);
+      if (k && pages[k] && k !== current) {
+        if (k !== 'dashboard' && sessionStorage.getItem('authed') !== '1') {
+          U.$('#app').style.display = 'none'; U.$('#loginScreen').style.display = 'flex';
+        } else go(k);
+      }
     });
+    window.__appHashBound = true;
   }
 
   // ---------------- data reload ----------------
@@ -72,9 +80,14 @@ window.App = (function () {
   }
 
   // ---------------- nav ----------------
-  function renderNav() {
+  function renderNav(publicOnly = false) {
     const nav = U.$('#nav');
     nav.innerHTML = '';
+    if (publicOnly) {
+      nav.appendChild(U.el('<div class="nav-group">หน้าสาธารณะ</div>'));
+      const item = U.el('<div class="nav-item active" data-key="dashboard"><span class="ic">🏠</span><span>แดชบอร์ด</span></div>');
+      item.onclick = () => go('dashboard'); nav.appendChild(item); return;
+    }
     NAV.forEach(n => {
       if (n.group) { nav.appendChild(U.el(`<div class="nav-group">${U.esc(n.group)}</div>`)); return; }
       const item = U.el(`<div class="nav-item" data-key="${n.key}"><span class="ic">${n.icon}</span><span>${U.esc(n.label)}</span></div>`);
@@ -85,6 +98,9 @@ window.App = (function () {
 
   function go(key) {
     if (!pages[key]) return;
+    if (key !== 'dashboard' && sessionStorage.getItem('authed') !== '1') {
+      U.$('#app').style.display = 'none'; U.$('#loginScreen').style.display = 'flex'; return;
+    }
     current = key;
     location.hash = key;
     U.$$('#nav .nav-item').forEach(i => i.classList.toggle('active', i.dataset.key === key));
