@@ -34,7 +34,19 @@ create table if not exists teachers (
   sort        int default 0
 );
 
--- ---------- 4) บัญชีทะเบียนที่ต้องการคุม ----------
+-- ---------- 4) บัญชีหลักของโรงเรียน ----------
+create table if not exists school_accounts (
+  id         uuid primary key default gen_random_uuid(),
+  name       text not null unique,
+  bank_name  text,
+  account_no text,
+  note       text,
+  sort       int default 0,
+  active     boolean default true,
+  created_at timestamptz default now()
+);
+
+-- ---------- 4.1) ทะเบียนคุมย่อยภายใต้บัญชีหลัก ----------
 create table if not exists accounts (
   id                 uuid primary key default gen_random_uuid(),
   code               text unique,           -- slug เช่น anuban_udnun
@@ -48,6 +60,8 @@ create table if not exists accounts (
   sort               int default 0,
   active             boolean default true
 );
+alter table accounts add column if not exists school_account_id uuid references school_accounts(id) on delete set null;
+create index if not exists idx_accounts_school_account on accounts(school_account_id);
 
 -- ---------- 4.5) โครงการ (พร้อมงบประมาณที่ได้รับ) ----------
 create table if not exists projects (
@@ -148,6 +162,7 @@ alter table school_info      enable row level security;
 alter table positions        enable row level security;
 alter table teachers         enable row level security;
 alter table accounts         enable row level security;
+alter table school_accounts  enable row level security;
 alter table projects         enable row level security;
 alter table project_activities enable row level security;
 alter table utility_bills     enable row level security;
@@ -157,7 +172,7 @@ alter table transactions     enable row level security;
 do $$
 declare t text;
 begin
-  foreach t in array array['school_info','positions','teachers','accounts','projects','project_activities','utility_bills','calendar_events','transactions']
+  foreach t in array array['school_info','positions','teachers','school_accounts','accounts','projects','project_activities','utility_bills','calendar_events','transactions']
   loop
     execute format('drop policy if exists "app_all" on %I;', t);
     execute format('create policy "app_all" on %I for all using (true) with check (true);', t);
@@ -172,6 +187,10 @@ end $$;
 insert into school_info (id, name, office, district, province, fiscal_year)
 values (1, 'โรงเรียนวัดทุ่งจาน', 'สพป.นม.3', 'อำเภอปักธงชัย', 'นครราชสีมา', 2569)
 on conflict (id) do nothing;
+
+insert into school_accounts (name, sort)
+values ('โรงเรียนวัดทุ่งจาน-เงินอุดหนุนอื่นๆ', 10)
+on conflict (name) do nothing;
 
 -- บัญชีทะเบียนที่ต้องการคุม (ตามรายการที่แนบ)
 insert into accounts (code, name, category, sort) values
@@ -191,6 +210,11 @@ insert into accounts (code, name, category, sort) values
   ('yakjon_special',  'ยากจนพิเศษ',       'อื่นๆ',  140),
   ('raidai_pandin',   'รายได้แผ่นดิน',    'อื่นๆ',  150)
 on conflict (code) do nothing;
+
+update accounts set name = 'ปัจจัยพื้นฐานนักเรียนยากจน' where name = 'ยากจน';
+update accounts set school_account_id = (
+  select id from school_accounts where name = 'โรงเรียนวัดทุ่งจาน-เงินอุดหนุนอื่นๆ'
+) where name in ('อนุบาลอุดหนุน','ประถมอุดหนุน','พัฒนาผู้เรียน','อุปกรณ์การเรียน','เครื่องแบบนักเรียน','หนังสือเรียน','ปัจจัยพื้นฐานนักเรียนยากจน');
 
 -- ตำแหน่งตัวอย่าง
 insert into positions (name, sort)

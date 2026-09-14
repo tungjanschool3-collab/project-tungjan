@@ -10,6 +10,7 @@ window.Store = (function () {
     school: null,
     positions: [],
     teachers: [],
+    schoolAccounts: [],
     accounts: [],
     projects: [],
     projectActivities: [],
@@ -33,10 +34,11 @@ window.Store = (function () {
 
   async function loadAll() {
     if (!configured) return false;
-    const [school, positions, teachers, accounts, projects, activities, utilities, events, txns] = await Promise.all([
+    const [school, positions, teachers, schoolAccounts, accounts, projects, activities, utilities, events, txns] = await Promise.all([
       sb.from('school_info').select('*').eq('id', 1).maybeSingle(),
       sb.from('positions').select('*').order('sort'),
       sb.from('teachers').select('*').order('sort'),
+      sb.from('school_accounts').select('*').order('sort'),
       sb.from('accounts').select('*').order('sort'),
       sb.from('projects').select('*').order('sort'),
       sb.from('project_activities').select('*').order('sort'),
@@ -44,11 +46,12 @@ window.Store = (function () {
       sb.from('calendar_events').select('*').order('event_date'),
       sb.from('transactions').select('*').order('txn_date').order('doc_no', { nullsFirst: true }).order('created_at'),
     ]);
-    const err = [school, positions, teachers, accounts, projects, activities, utilities, events, txns].find(r => r.error);
+    const err = [school, positions, teachers, schoolAccounts, accounts, projects, activities, utilities, events, txns].find(r => r.error);
     if (err && err.error) { console.error(err.error); throw err.error; }
     cache.school = school.data || null;
     cache.positions = positions.data || [];
     cache.teachers = teachers.data || [];
+    cache.schoolAccounts = schoolAccounts.data || [];
     cache.accounts = accounts.data || [];
     cache.projects = projects.data || [];
     cache.projectActivities = activities.data || [];
@@ -85,6 +88,7 @@ window.Store = (function () {
   const accountById = id => cache.accounts.find(a => a.id === id);
   const teacherById = id => cache.teachers.find(t => t.id === id);
   const positionById = id => cache.positions.find(p => p.id === id);
+  const schoolAccountById = id => cache.schoolAccounts.find(a => a.id === id);
   const projectById = id => cache.projects.find(p => p.id === id);
   const projectByName = name => cache.projects.find(p => (p.name || '').trim() === (name || '').trim());
   // เพิ่มหลายแถวพร้อมกัน (ใช้ตอนนำเข้า CSV)
@@ -147,6 +151,6 @@ window.Store = (function () {
   }
 
   return { init, isConfigured, client, data, loadAll, insert, insertMany, update, remove,
-    upsertSchool, accountById, teacherById, positionById, projectById, projectByName, nextDocNo,
+    upsertSchool, accountById, teacherById, positionById, schoolAccountById, projectById, projectByName, nextDocNo,
     START_FY, fyList, getFY, setFY, txnsFY, projectsFY, utilitiesFY, deleteFY };
 })();
