@@ -137,11 +137,9 @@ window.App = (function () {
   function confirmDialog(msg, onYes, { danger = true, yes = 'ยืนยัน' } = {}) {
     const body = U.el(`<div style="font-size:15px;padding:6px 0">${U.esc(msg)}</div>`);
     const foot = U.el('<div class="btn-row"></div>');
-    const no = U.el('<button class="btn ghost">ยกเลิก</button>');
     const ok = U.el(`<button class="btn ${danger ? 'danger' : 'primary'}">${U.esc(yes)}</button>`);
-    no.onclick = closeModal;
     ok.onclick = async () => { closeModal(); await onYes(); };
-    foot.append(no, ok);
+    foot.append(ok);
     openModal('ยืนยันการทำรายการ', body, foot);
   }
 
@@ -177,9 +175,7 @@ window.App = (function () {
       grid.appendChild(wrap);
     });
     const foot = U.el('<div class="btn-row"></div>');
-    const cancel = U.el('<button class="btn ghost">ยกเลิก</button>');
     const save = U.el(`<button class="btn primary">💾 ${U.esc(submitLabel)}</button>`);
-    cancel.onclick = closeModal;
     save.onclick = async () => {
       const out = {};
       for (const [name, { inp, def }] of Object.entries(inputs)) {
@@ -194,7 +190,7 @@ window.App = (function () {
       try { await onSubmit(out); closeModal(); }
       catch (e) { console.error(e); U.toast('บันทึกไม่สำเร็จ: ' + (e.message || e), 'err'); save.disabled = false; save.textContent = '💾 ' + submitLabel; }
     };
-    foot.append(cancel, save);
+    foot.append(save);
     openModal(title, grid, foot, { width });
   }
 
@@ -213,9 +209,14 @@ window.App = (function () {
 })();
 
 document.addEventListener('DOMContentLoaded', () => {
-  // ปุ่มปิดโมดัล/คลิกพื้นหลัง
+  // ปิดโมดัลด้วยปุ่มกากบาทเท่านั้น การคลิกพื้นหลังและปุ่ม Esc จะไม่ปิดหน้าต่าง
   U.$('#modalClose').addEventListener('click', App.closeModal);
-  U.$('#modalBack').addEventListener('click', e => { if (e.target.id === 'modalBack') App.closeModal(); });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && U.$('#modalBack').classList.contains('show')) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }, true);
   U.$('#reloadBtn').addEventListener('click', () => App.reload(false));
   U.$('#logoutBtn').addEventListener('click', () => { sessionStorage.removeItem('authed'); location.reload(); });
   App.boot();

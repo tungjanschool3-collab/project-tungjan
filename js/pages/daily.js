@@ -203,10 +203,8 @@
     projectSel.onchange = updateActivities; updateActivities();
 
     const foot = U.el('<div class="btn-row"></div>');
-    const cancel = U.el('<button class="btn ghost">ยกเลิก</button>');
     const saveNext = isNew ? U.el('<button class="btn">＋ เพิ่มรายการ</button>') : null;
     const save = U.el('<button class="btn primary">💾 บันทึกและเสร็จ</button>');
-    cancel.onclick = App.closeModal;
     const saveEntry = async keepOpen => {
       const g = id => body.querySelector(id);
       const selectedProject = Store.projectById(g('#f_proj').value);
@@ -259,7 +257,6 @@
     };
     if (saveNext) saveNext.onclick = () => saveEntry(true);
     save.onclick = () => saveEntry(false);
-    foot.append(cancel);
     if (saveNext) foot.append(saveNext);
     foot.append(save);
     App.openModal(isNew ? 'เพิ่มรายการรับ–จ่าย' : 'แก้ไขรายการ', body, foot, { width: '760px' });
