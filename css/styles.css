@@ -152,6 +152,21 @@ table.data .num{text-align:right;font-variant-numeric:tabular-nums}
 @media(max-width:1100px){.project-summary{grid-template-columns:repeat(3,1fr)}.summary-progress{grid-column:1/-1;width:100%}.project-card-grid{grid-template-columns:1fr}}
 @media(max-width:600px){.project-summary{grid-template-columns:1fr}.summary-progress{grid-column:auto}.project-money{padding-left:12px;padding-right:12px}.project-money strong{font-size:13px}.project-budget-card>header{padding-left:12px;padding-right:12px}}
 
+/* ---------- ตั้งค่า: บัญชีโรงเรียน ---------- */
+.school-account-head{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:22px 24px;border-radius:18px;color:#fff;background:linear-gradient(125deg,#364fc7,#6741d9 55%,#0ca678);box-shadow:0 14px 34px rgba(54,79,199,.22)}
+.school-account-head h2{font-size:22px}.school-account-head p{margin:5px 0 0;color:rgba(255,255,255,.82);font-size:13px}.account-kicker{display:block;margin-bottom:4px;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#ffe066}
+.school-account-head .btn{flex:0 0 auto;background:#fff;color:#3b5bdb;box-shadow:0 8px 20px rgba(15,23,42,.18)}
+.account-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:16px 0}
+.account-stats>div{padding:14px 17px;border:1px solid var(--line);border-radius:14px;background:#fff;box-shadow:var(--shadow)}.account-stats span{display:block;color:var(--muted);font-size:12px}.account-stats strong{display:inline-block;margin-top:4px;color:#3b5bdb;font-size:24px}.account-stats small{margin-left:5px;color:var(--muted)}
+.school-account-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.school-account-card{padding:18px;border:1px solid #dde3f0;border-radius:17px;background:#fff;box-shadow:var(--shadow)}.school-account-card.inactive{opacity:.65;filter:saturate(.45)}
+.account-card-top{display:flex;align-items:center;gap:11px}.account-card-top>div{min-width:0;flex:1}.account-card-top h3{font-size:17px;overflow-wrap:anywhere}.account-icon{display:grid;place-items:center;flex:0 0 42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#e7f5ff,#e5dbff);font-size:20px}.account-order{display:block;color:var(--muted);font-size:11px}.account-status{padding:4px 9px;border-radius:20px;color:#087f5b;background:#d3f9d8;font-size:11px;font-weight:800}.inactive .account-status{color:#6b7280;background:#e9ecef}
+.account-meta{display:flex;gap:8px;flex-wrap:wrap;margin:13px 0}.account-meta>span{padding:5px 9px;border-radius:8px;background:#f2f4f8;color:var(--muted);font-size:11px}.account-meta b{color:#3f4b61}
+.account-opening{display:flex;align-items:baseline;gap:6px;padding:12px 13px;border-radius:12px;color:#fff;background:linear-gradient(115deg,#3b5bdb,#845ef7)}.account-opening span{flex:1;font-size:12px;opacity:.85}.account-opening strong{font-size:22px;font-variant-numeric:tabular-nums}.account-opening small{opacity:.8}
+.account-balance-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:10px}.account-balance-grid>div{padding:8px 10px;border-radius:10px;background:#f7f8fc}.account-balance-grid span{display:block;color:var(--muted);font-size:11px}.account-balance-grid b{font-size:13px;color:#344054;font-variant-numeric:tabular-nums}
+.account-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:13px;padding-top:12px;border-top:1px solid var(--line)}.account-empty{grid-column:1/-1;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--muted)}.account-empty b{color:var(--ink)}
+@media(max-width:850px){.school-account-grid{grid-template-columns:1fr}.school-account-head{align-items:flex-start;flex-direction:column}.account-stats{grid-template-columns:1fr}}
+
 /* ---------- Modal ---------- */
 .modal-back{position:fixed;inset:0;background:rgba(15,20,40,.5);display:none;align-items:center;justify-content:center;z-index:40;padding:18px}
 .modal-back.show{display:flex}

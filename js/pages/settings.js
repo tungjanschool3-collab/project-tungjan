@@ -6,7 +6,7 @@
   const TABS = [
     { k: 'school', label: '🏫 ข้อมูลโรงเรียน' },
     { k: 'staff', label: '👩‍🏫 ครู & ตำแหน่ง' },
-    { k: 'accounts', label: '📒 บัญชี & ยอดยกมา' },
+    { k: 'accounts', label: '🏦 บัญชีโรงเรียน' },
     { k: 'projects', label: '📁 โครงการ' },
     { k: 'fiscalyears', label: '🗓️ ปีงบประมาณ' },
     { k: 'calendar', label: '📅 ปฏิทิน' },
@@ -142,52 +142,41 @@
 
   // ---------------- บัญชี & ยอดยกมา ----------------
   function renderAccounts(c, D) {
-    const card = U.el(`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center">
-      <div><h3>บัญชีทะเบียนที่ต้องการคุม</h3><div class="sub">แต่ละบัญชีจะมีทะเบียนคุมเงินนอกงบประมาณของตัวเอง — กรอก "ยอดยกมา" ต้นปีงบ</div></div>
-      <button class="btn primary sm" id="addAcc">+ เพิ่มบัญชี</button></div>
-      <div class="table-wrap"><table class="data">
-      <thead><tr><th>บัญชี</th><th>ประเภท</th><th class="num">ยกมา:เงินสด</th><th class="num">ยกมา:ธนาคาร</th><th class="num">ยกมา:ส่วนราชการ</th><th class="num">ยกมา:ลูกหนี้</th><th>วันที่ยกมา</th><th style="width:90px"></th></tr></thead>
-      <tbody id="accBody"></tbody></table></div></div>`);
-    const b = card.querySelector('#accBody');
-    if (!D.accounts.length) b.appendChild(U.el('<tr><td colspan="8"><div class="empty">ยังไม่มีบัญชี</div></td></tr>'));
-    D.accounts.forEach(a => {
-      const tr = U.el(`<tr>
-        <td><b>${U.esc(a.name)}</b>${a.active === false ? ' <span class="pill" style="background:#eee;color:#888">ปิด</span>' : ''}</td>
-        <td>${U.esc(a.category || '')}</td>
-        <td class="num">${U.money(a.opening_cash)}</td>
-        <td class="num">${U.money(a.opening_bank)}</td>
-        <td class="num">${U.money(a.opening_govdeposit)}</td>
-        <td class="num">${U.money(a.opening_debtor)}</td>
-        <td>${U.esc(a.opening_date ? U.thaiDate(a.opening_date) : '—')}</td>
-        <td><div class="row-actions"><button class="icon-btn">✏️</button><button class="icon-btn del">🗑️</button></div></td></tr>`);
-      tr.querySelectorAll('button')[0].onclick = () => editAccount(a);
-      tr.querySelectorAll('button')[1].onclick = () => delRow('accounts', a.id, `ลบบัญชี "${a.name}"? (ประวัติที่ผูกกับบัญชีนี้จะไม่ถูกลบแต่จะไม่มีบัญชีอ้างอิง)`);
-      b.appendChild(tr);
+    const active=D.accounts.filter(a=>a.active!==false),opening=a=>Number(a.opening_cash||0)+Number(a.opening_bank||0)+Number(a.opening_govdeposit||0)+Number(a.opening_debtor||0),total=active.reduce((s,a)=>s+opening(a),0);
+    const head=U.el(`<div><div class="school-account-head"><div><span class="account-kicker">บัญชีโรงเรียน</span><h2>บัญชีโรงเรียนที่ต้องการคุม</h2><p>เพิ่มบัญชีได้หลายบัญชี แต่ละบัญชีมีทะเบียนรับ–จ่ายและยอดคงเหลือแยกจากกัน</p></div><button class="btn primary" id="addAcc">＋ เพิ่มบัญชีโรงเรียน</button></div><div class="account-stats"><div><span>บัญชีทั้งหมด</span><strong>${D.accounts.length}</strong><small>บัญชี</small></div><div><span>กำลังคุมบัญชี</span><strong>${active.length}</strong><small>บัญชี</small></div><div><span>ยอดยกมารวม</span><strong>${U.money(total)}</strong><small>บาท</small></div></div></div>`);
+    head.querySelector('#addAcc').onclick=()=>editAccount(null);c.appendChild(head);
+    const grid=U.el('<div class="school-account-grid"></div>');
+    if(!D.accounts.length)grid.appendChild(U.el('<div class="card account-empty"><b>ยังไม่มีบัญชีโรงเรียน</b><span>กด “เพิ่มบัญชีโรงเรียน” เพื่อเริ่มทำบัญชีคุมบัญชีแรก</span></div>'));
+    D.accounts.forEach((a,i)=>{
+      const enabled=a.active!==false,card=U.el(`<section class="school-account-card ${enabled?'':'inactive'}"><div class="account-card-top"><span class="account-icon">🏦</span><div><span class="account-order">บัญชีที่ ${i+1}</span><h3>${U.esc(a.name)}</h3></div><span class="account-status">${enabled?'กำลังคุม':'ปิดใช้งาน'}</span></div><div class="account-meta"><span>ประเภท <b>${U.esc(a.category||'อื่นๆ')}</b></span><span>วันที่ยกมา <b>${U.esc(a.opening_date?U.thaiDate(a.opening_date):'ยังไม่ระบุ')}</b></span></div><div class="account-opening"><span>ยอดยกมารวม</span><strong>${U.money(opening(a))}</strong><small>บาท</small></div><div class="account-balance-grid"><div><span>เงินสด</span><b>${U.money(a.opening_cash)}</b></div><div><span>ธนาคาร</span><b>${U.money(a.opening_bank)}</b></div><div><span>ส่วนราชการ</span><b>${U.money(a.opening_govdeposit)}</b></div><div><span>ลูกหนี้</span><b>${U.money(a.opening_debtor)}</b></div></div><div class="account-actions"><button class="btn ghost sm editAcc">✏️ แก้ไขบัญชี</button><button class="icon-btn del delAcc" title="ลบบัญชี">🗑️</button></div></section>`);
+      card.querySelector('.editAcc').onclick=()=>editAccount(a);card.querySelector('.delAcc').onclick=()=>delRow('accounts',a.id,`ลบบัญชี "${a.name}"? (ประวัติที่ผูกกับบัญชีนี้จะไม่ถูกลบแต่จะไม่มีบัญชีอ้างอิง)`);grid.appendChild(card);
     });
-    card.querySelector('#addAcc').onclick = () => editAccount(null);
-    c.appendChild(card);
+    c.appendChild(grid);
   }
   function editAccount(a) {
     App.formModal({
       width: '620px',
-      title: a ? 'แก้ไขบัญชี' : 'เพิ่มบัญชี',
+      title: a ? 'แก้ไขบัญชีโรงเรียน' : 'เพิ่มบัญชีโรงเรียน',
       fields: [
-        { name: 'name', label: 'ชื่อบัญชี', required: true, col: 1 },
+        { name: 'name', label: 'ชื่อบัญชีโรงเรียนที่ต้องการคุม', required: true, col: 1, hint: 'เช่น เงินอุดหนุนทั่วไป, อาหารกลางวัน หรือรายได้สถานศึกษา' },
         { name: 'category', label: 'ประเภท', type: 'select',
           options: ['อนุบาล', 'ประถม', 'อื่นๆ'].map(x => ({ value: x, label: x })) },
         { name: 'sort', label: 'ลำดับการแสดง', type: 'number' },
+        { name: 'active', label: 'เปิดใช้งานบัญชีนี้', type: 'checkbox', col: 1 },
         { name: 'opening_cash', label: 'ยอดยกมา: เงินสด', type: 'number', step: '0.01' },
         { name: 'opening_bank', label: 'ยอดยกมา: เงินฝากธนาคาร', type: 'number', step: '0.01' },
         { name: 'opening_govdeposit', label: 'ยอดยกมา: เงินฝากส่วนราชการ', type: 'number', step: '0.01' },
         { name: 'opening_debtor', label: 'ยอดยกมา: ลูกหนี้', type: 'number', step: '0.01' },
         { name: 'opening_date', label: 'วันที่ยกยอดมา', type: 'date', col: 1 },
       ],
-      values: a || { category: 'อื่นๆ', sort: (Store.data().accounts.length + 1) * 10 },
+      values: a || { category: 'อื่นๆ', active: true, sort: (Store.data().accounts.length + 1) * 10 },
       onSubmit: async (v) => {
+        const duplicate=Store.data().accounts.find(x=>x.id!==(a&&a.id)&&(x.name||'').trim().toLowerCase()===String(v.name||'').trim().toLowerCase());
+        if(duplicate)throw new Error('มีบัญชีชื่อนี้อยู่แล้ว กรุณาใช้ชื่ออื่น');
         if (!v.opening_date) v.opening_date = null;
         if (!a) v.code = 'acc_' + U.uid();
         if (a) await Store.update('accounts', a.id, v); else await Store.insert('accounts', v);
-        U.toast('บันทึกบัญชีแล้ว'); await refresh();
+        U.toast(a?'บันทึกบัญชีโรงเรียนแล้ว':'เพิ่มบัญชีโรงเรียนแล้ว'); await refresh();
       },
     });
   }
