@@ -119,6 +119,39 @@ table.data .num{text-align:right;font-variant-numeric:tabular-nums}
 .toolbar .field{margin:0}
 .spacer{flex:1}
 
+/* ---------- รายงานงบโครงการแบบแถบความคืบหน้า ---------- */
+.project-report-screen{display:grid;gap:18px}
+.project-summary{display:grid;grid-template-columns:repeat(3,minmax(140px,1fr)) minmax(220px,1.35fr);gap:14px;padding:18px 20px;border-radius:18px;color:#fff;background:linear-gradient(125deg,#5f3dc4 0%,#3b5bdb 48%,#00a896 100%);box-shadow:0 14px 34px rgba(59,91,219,.24)}
+.project-summary>div:not(.summary-progress){display:flex;flex-direction:column;gap:3px}
+.project-summary span{font-size:12.5px;opacity:.82}
+.project-summary strong{font-size:22px;font-variant-numeric:tabular-nums}
+.summary-progress{align-self:center}.summary-progress .progress-label{color:#fff}.summary-progress .progress-track{background:rgba(255,255,255,.25)}.summary-progress .progress-track span{background:linear-gradient(90deg,#ffe066,#ff922b,#ff4d6d)}
+.project-card-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.project-budget-card{overflow:hidden;background:#fff;border:1px solid #dde3f0;border-radius:18px;box-shadow:var(--shadow)}
+.project-budget-card>header{display:flex;align-items:center;gap:11px;padding:16px 18px 12px}
+.project-budget-card>header h3{font-size:17px;line-height:1.35}
+.project-number{display:grid;place-items:center;flex:0 0 32px;height:32px;border-radius:10px;color:#fff;font-weight:800;background:linear-gradient(135deg,#845ef7,#3b5bdb)}
+.project-money{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 18px 12px}
+.project-money>div{min-width:0;padding:9px 10px;border-radius:11px;background:#f6f8fc}
+.project-money span{display:block;color:var(--muted);font-size:11.5px}
+.project-money strong{display:block;margin-top:2px;font-size:15px;overflow-wrap:anywhere;font-variant-numeric:tabular-nums;color:#16794f}
+.project-money strong.spent{color:#e8590c}.project-money strong.over{color:#e03131}
+.project-progress{padding:0 18px 16px}
+.progress-label{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;color:#536078;font-size:12px}
+.progress-label b{font-size:15px;color:#7048e8}
+.progress-track{height:13px;overflow:hidden;border-radius:999px;background:#e9edf5}
+.progress-track span{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#20c997 0%,#15aabf 35%,#845ef7 70%,#f06595 100%);box-shadow:0 0 14px rgba(132,94,247,.42);transition:width .35s ease}
+.project-progress.small{padding:0}.project-progress.small .progress-track{height:8px}.project-progress.small .progress-label{margin-bottom:4px}.project-progress.small .progress-label b{font-size:12px}
+.activity-list{border-top:1px solid var(--line);background:#f8f9fd;padding:13px 14px 15px}
+.activity-title{display:flex;justify-content:space-between;align-items:center;padding:0 4px 9px;color:#39445a;font-size:13px}
+.activity-title b{color:#7048e8;font-size:12px}
+.activity-row{padding:12px;margin-top:8px;border:1px solid #e4e7f2;border-radius:13px;background:#fff}
+.activity-head{display:flex;justify-content:space-between;gap:12px;margin-bottom:8px;font-size:13px}.activity-head span{color:#7048e8;font-weight:800;white-space:nowrap}
+.activity-row .project-money{padding:0 0 9px}.activity-row .project-money>div{padding:6px 8px;background:#f7f8fc}.activity-row .project-money strong{font-size:13px}
+.activity-empty{padding:12px;text-align:center;color:var(--muted);font-size:13px;border:1px dashed #ccd3e2;border-radius:11px;background:#fff}
+@media(max-width:1100px){.project-summary{grid-template-columns:repeat(3,1fr)}.summary-progress{grid-column:1/-1;width:100%}.project-card-grid{grid-template-columns:1fr}}
+@media(max-width:600px){.project-summary{grid-template-columns:1fr}.summary-progress{grid-column:auto}.project-money{padding-left:12px;padding-right:12px}.project-money strong{font-size:13px}.project-budget-card>header{padding-left:12px;padding-right:12px}}
+
 /* ---------- Modal ---------- */
 .modal-back{position:fixed;inset:0;background:rgba(15,20,40,.5);display:none;align-items:center;justify-content:center;z-index:40;padding:18px}
 .modal-back.show{display:flex}
