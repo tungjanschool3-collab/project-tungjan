@@ -28,6 +28,11 @@ window.App = (function () {
   // ---------------- boot ----------------
   async function boot() {
     Store.init();
+    document.addEventListener('click', e => {
+      if (thaiCalendar && !thaiCalendar.contains(e.target) && !e.target.classList.contains('thai-date-trigger')) {
+        closeThaiCalendar();
+      }
+    });
     // ปุ่มล็อกอิน
     const inp = U.$('#codeInput'), err = U.$('#loginErr');
     U.$('#loginBtn').addEventListener('click', tryLogin);
@@ -291,9 +296,6 @@ document.addEventListener('DOMContentLoaded', () => {
       e.stopPropagation();
     }
   }, true);
-  document.addEventListener('click', e => {
-    if (thaiCalendar && !thaiCalendar.contains(e.target) && !e.target.classList.contains('thai-date-trigger')) closeThaiCalendar();
-  });
   U.$('#reloadBtn').addEventListener('click', () => App.reload(false));
   U.$('#logoutBtn').addEventListener('click', () => { sessionStorage.removeItem('authed'); location.reload(); });
   App.boot();

@@ -9,9 +9,14 @@ window.Exporter = (function () {
     const ws = XLSX.utils.aoa_to_sheet(aoa);
     if (merges.length) ws['!merges'] = merges.map(m => XLSX.utils.decode_range(m));
     if (cols.length) ws['!cols'] = cols.map(w => ({ wch: w }));
-    // จัดรูปแบบตัวเลขคอลัมน์เงิน
+    // ใช้ Sarabun ให้ตรงกับหน้าเว็บกับทุกเซลล์ในไฟล์ Excel
     const range = XLSX.utils.decode_range(ws['!ref']);
     for (let R = range.s.r; R <= range.e.r; R++) {
+      for (let C = range.s.c; C <= range.e.c; C++) {
+        const addr = XLSX.utils.encode_cell({ r: R, c: C });
+        const cell = ws[addr];
+        if (cell) cell.s = { ...(cell.s || {}), font: { ...((cell.s || {}).font || {}), name: 'Sarabun', sz: 11 } };
+      }
       for (const C of numCols) {
         const addr = XLSX.utils.encode_cell({ r: R, c: C });
         const cell = ws[addr];
