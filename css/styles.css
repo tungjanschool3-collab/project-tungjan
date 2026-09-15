@@ -211,9 +211,9 @@ table.data .num{text-align:right;font-variant-numeric:tabular-nums}
 .chip.active{background:var(--brand);color:#fff;border-color:var(--brand)}
 
 /* ============================================================
-   สไตล์เอกสารพิมพ์ (กระดาษ A4 / TH Sarabun)
+   สไตล์เอกสารพิมพ์ (กระดาษ A4 / Sarabun)
    ============================================================ */
-.sheet{background:#fff;color:#000;font-family:'TH SarabunPSK','TH Sarabun New','Sarabun',serif;
+.sheet{background:#fff;color:#000;font-family:'Sarabun','TH Sarabun New','Segoe UI',Tahoma,sans-serif;
   width:100%;margin:0 auto;padding:0;font-size:16pt;line-height:1.35}
 .doc-head{text-align:center;position:relative;margin-bottom:8px;min-height:66px}
 .doc-head .doc-logo{position:absolute;left:0;top:0;width:66px;height:66px;object-fit:contain}
@@ -221,7 +221,7 @@ table.data .num{text-align:right;font-variant-numeric:tabular-nums}
 .doc-head .t1{font-size:20pt;font-weight:700}
 .doc-head .t2{font-size:18pt;font-weight:700}
 .doc-head .t3{font-size:16pt}
-table.reg{width:100%;border-collapse:collapse;font-family:'TH SarabunPSK','TH Sarabun New','Sarabun',serif;font-size:16pt}
+table.reg{width:100%;border-collapse:collapse;font-family:'Sarabun','TH Sarabun New','Segoe UI',Tahoma,sans-serif;font-size:16pt}
 table.reg th,table.reg td{border:1px solid #000;padding:2px 5px;vertical-align:top}
 table.reg th{text-align:center;font-weight:700;background:#f2f2f2}
 table.reg td.num{text-align:right;font-variant-numeric:tabular-nums}
@@ -229,15 +229,18 @@ table.reg td.c{text-align:center}
 table.reg tr.sum td{font-weight:700;background:#fafafa}
 .offbudget-reg{font-size:13pt}
 .offbudget-reg th,.offbudget-reg td{padding:1px 3px}
-.sign-row{display:flex;justify-content:space-around;margin-top:34px;font-family:'TH SarabunPSK','TH Sarabun New','Sarabun',serif;font-size:16pt;text-align:center}
+.sign-row{display:flex;justify-content:space-around;margin-top:34px;font-family:'Sarabun','TH Sarabun New','Segoe UI',Tahoma,sans-serif;font-size:16pt;text-align:center}
 .sign-row .s{white-space:nowrap}
 .daily-print-table{table-layout:fixed}
 .daily-print-table th,.daily-print-table td{overflow-wrap:anywhere}
 .daily-print-table th:nth-child(3),.daily-print-table td:nth-child(3){font-size:14px}
 .daily-print-table .daily-item-activity{font-size:inherit}
+.voucher-reg{table-layout:fixed}
+.voucher-reg td:nth-child(4){font-size:14px;overflow-wrap:anywhere}
+.voucher-reg .voucher-note{white-space:pre-line;overflow-wrap:anywhere}
 
 .print-only{display:none}
-.daily-balance-page{max-width:794px;margin:0 auto;background:#fff;color:#111;font-family:'TH Sarabun New','Sarabun',sans-serif}
+.daily-balance-page{max-width:794px;margin:0 auto;background:#fff;color:#111;font-family:'Sarabun','TH Sarabun New','Segoe UI',Tahoma,sans-serif}
 .daily-balance-page .report-top{position:relative;text-align:center;margin-bottom:7px;line-height:1.25}
 .daily-balance-page .report-fy{position:absolute;right:0;top:0;font-size:15px}
 .daily-balance-page .report-org{font-size:20px;font-weight:700;padding-top:24px}
@@ -270,6 +273,7 @@ table.reg tr.sum td{font-weight:700;background:#fafafa}
 @media print{
   @page{size:A4 landscape;margin:8mm}
   @page dailyPortrait{size:A4 portrait;margin:10mm}
+  @page voucherPortrait{size:A4 portrait;margin:8mm}
   body{background:#fff}
   .sidebar,.topbar,.toolbar,.no-print,#toast,.modal-back{display:none!important}
   .main{padding:0}
@@ -284,6 +288,8 @@ table.reg tr.sum td{font-weight:700;background:#fafafa}
   .page-break{page-break-after:always}
   .activity-summary-page{break-before:page;page-break-before:always}
   .daily-print-sheet{page:dailyPortrait}
+  .voucher-sheet{page:voucherPortrait}
+  .voucher-reg td:nth-child(4){font-size:14px}
   .daily-print-sheet .daily-print-table{font-size:16pt}
   .daily-print-sheet .daily-print-table th:nth-child(3),.daily-print-sheet .daily-print-table td:nth-child(3){font-size:14px}
   .daily-balance-page{page:dailyPortrait;width:190mm;max-width:190mm;padding:0!important}
