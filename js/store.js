@@ -100,6 +100,14 @@ window.Store = (function () {
   }
 
   // ---------- ปีงบประมาณ (fiscal year) ----------
+  // รองรับข้อมูลเก่าบางชุดที่เคยบวก 543 กับปี พ.ศ. ซ้ำ (เช่น 3112 -> 2569)
+  function normalizeFY(value) {
+    let fy = Number(value);
+    if (!Number.isFinite(fy)) return 0;
+    while (fy > 2800) fy -= 543;
+    return fy;
+  }
+
   // ปีงบไทยของรายการ = คำนวณจากวันที่ (ต.ค.–ก.ย.)
   const fyOfTxn = t => window.U ? U.fiscalYearOf(t.txn_date) : START_FY;
 
@@ -107,7 +115,7 @@ window.Store = (function () {
   function fyList() {
     const set = new Set([START_FY]);
     cache.transactions.forEach(t => { if (t.txn_date) set.add(fyOfTxn(t)); });
-    cache.projects.forEach(p => { if (p.fiscal_year) set.add(Number(p.fiscal_year)); });
+    cache.projects.forEach(p => { if (p.fiscal_year) set.add(normalizeFY(p.fiscal_year)); });
     if (window.U) set.add(U.fiscalYearOf(U.todayISO()));
     if (currentFY) set.add(currentFY);
     return Array.from(set).filter(Boolean).sort((a, b) => b - a);
@@ -116,20 +124,20 @@ window.Store = (function () {
   function getFY() {
     if (currentFY == null) {
       let saved = null;
-      try { saved = Number(localStorage.getItem('currentFY')); } catch (e) {}
+      try { saved = normalizeFY(localStorage.getItem('currentFY')); } catch (e) {}
       const list = fyList();
       currentFY = (saved && list.includes(saved)) ? saved : (list[0] || START_FY);
     }
     return currentFY;
   }
   function setFY(fy) {
-    currentFY = Number(fy);
+    currentFY = normalizeFY(fy) || START_FY;
     try { localStorage.setItem('currentFY', String(currentFY)); } catch (e) {}
   }
 
   // ตัวกรองตามปีงบ
   function txnsFY(fy = getFY()) { return cache.transactions.filter(t => fyOfTxn(t) === fy); }
-  function projectsFY(fy = getFY()) { return cache.projects.filter(p => Number(p.fiscal_year || START_FY) === fy); }
+  function projectsFY(fy = getFY()) { return cache.projects.filter(p => normalizeFY(p.fiscal_year || START_FY) === fy); }
   const fyOfMonth = ym => window.U ? U.fiscalYearOf(String(ym || '').slice(0, 7) + '-01') : START_FY;
   function utilitiesFY(fy = getFY()) { return cache.utilityBills.filter(u => fyOfMonth(u.bill_month) === fy); }
 
