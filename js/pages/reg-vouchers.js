@@ -10,6 +10,12 @@
       .sort((a, b) => (a.doc_no || 0) - (b.doc_no || 0) || (a.txn_date < b.txn_date ? -1 : 1));
   }
   const amountOf = t => Number(t.amount_in || 0) > 0 ? Number(t.amount_in) : Number(t.amount_out || 0);
+  function noteOf(t) {
+    const lines = String(t.notes || '').split(/\r?\n/);
+    const activity = lines.find(line => line.startsWith('[กิจกรรม] '))?.slice('[กิจกรรม] '.length) || '';
+    const notes = lines.filter(line => !line.startsWith('[กิจกรรม] ')).join('\n').trim();
+    return [activity ? `กิจกรรม: ${activity}` : '', notes].filter(Boolean).join('\n');
+  }
 
   function render(c) {
     const months = App.monthOptions();
@@ -35,19 +41,18 @@
   }
 
   function buildSheet(rows, m, s) {
-    const wrap = U.el('<div class="card"><div class="sheet"></div></div>');
+    const wrap = U.el('<div class="card"><div class="sheet voucher-sheet"></div></div>');
     const sheet = wrap.querySelector('.sheet');
     const fy = String((Store.getFY())).slice(-2);
     sheet.appendChild(U.el(`<div class="doc-head">
       <div class="fy">ปีงบประมาณ ${Store.getFY()}</div><img class="doc-logo" src="assets/logo.png" alt="">
       <div class="t1">ทะเบียนคุม บค./บจ./บย./บร.</div>
       <div class="t2">${U.esc(s.name || '')} ${U.esc(s.district || '')} จังหวัด${U.esc(s.province || '')}</div>
-      <div class="t3">${U.thaiMonthYear(m)}</div>
     </div>`));
-    const table = U.el(`<table class="reg"><thead>
-      <tr><th rowspan="2" style="width:12%">วัน เดือน ปี</th><th colspan="2">เลขที่เอกสาร</th>
+    const table = U.el(`<table class="reg voucher-reg"><thead>
+      <tr><th rowspan="2" style="width:9%">วัน เดือน ปี</th><th colspan="2">เลขที่เอกสาร</th>
       <th rowspan="2">รายการ</th><th rowspan="2" style="width:13%">จำนวนเงิน</th>
-      <th rowspan="2" style="width:15%">บัญชี</th><th rowspan="2" style="width:12%">หมายเหตุ</th></tr>
+      <th rowspan="2" style="width:15%">บัญชี</th><th rowspan="2" style="width:16%">หมายเหตุ</th></tr>
       <tr><th style="width:8%">บค./บจ./บย./บร.</th><th style="width:7%">.../${fy}</th></tr>
       </thead><tbody></tbody></table>`);
     const tb = table.querySelector('tbody');
@@ -63,7 +68,7 @@
         <td>${U.esc(t.description || '')}</td>
         <td class="num">${U.money0(amt)}</td>
         <td class="c">${acc ? U.esc(acc.name) : ''}</td>
-        <td>${U.esc(t.notes || '')}</td></tr>`));
+        <td class="voucher-note">${U.esc(noteOf(t))}</td></tr>`));
     });
     if (!rows.length) tb.appendChild(U.el('<tr><td colspan="7" class="c" style="padding:20px;color:#999">— ไม่มีรายการในเดือนนี้ —</td></tr>'));
     tb.appendChild(U.el(`<tr class="sum"><td colspan="4" class="c">รวมทั้งสิ้น</td><td class="num">${U.money(total)}</td><td colspan="2"></td></tr>`));
@@ -84,7 +89,7 @@
       const acc = Store.accountById(t.account_id);
       const showDate = t.txn_date !== last; last = t.txn_date;
       const amt = amountOf(t); total += amt;
-      aoa.push([showDate ? U.thaiDate(t.txn_date) : '', t.doc_type || '', t.doc_no || '', t.description || '', amt, acc ? acc.name : '', t.notes || '']);
+      aoa.push([showDate ? U.thaiDate(t.txn_date) : '', t.doc_type || '', t.doc_no || '', t.description || '', amt, acc ? acc.name : '', noteOf(t)]);
     });
     aoa.push(['', '', '', 'รวมทั้งสิ้น', total, '', '']);
     return aoa;

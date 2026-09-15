@@ -132,7 +132,7 @@
     const rows = activityTotals(acc, m);
     const card = U.el(`<div class="card activity-summary-page">
       <h3>สรุปเงินตามกิจกรรม</h3>
-      <div class="sub">รวมยอดกิจกรรมย่อยของบัญชี ${U.esc(acc.name)} · ${U.thaiMonthYear(m)}</div>
+      <div class="sub">รวมยอดกิจกรรมย่อยของบัญชี ${U.esc(acc.name)}</div>
       <div class="table-wrap"><table class="data"><thead><tr>
         <th>โครงการ</th><th>กิจกรรมย่อย</th><th class="num">รับ</th><th class="num">จ่าย</th><th class="num">สุทธิ</th>
       </tr></thead><tbody></tbody><tfoot></tfoot></table></div>
@@ -166,7 +166,6 @@
       <div class="fy">ปีงบประมาณ ${Store.getFY()}</div><img class="doc-logo" src="assets/logo.png" alt="">
       <div class="t1">ทะเบียนคุมเงินนอกงบประมาณ</div>
       <div class="t2">ประเภทเงิน: ${U.esc(acc.name)}&nbsp;&nbsp;${U.esc(s.name || '')} ${U.esc(s.office || '')}</div>
-      <div class="t3">${U.thaiMonthYear(m)}</div>
     </div>`));
     const table = U.el(`<table class="reg offbudget-reg"><thead>
       <tr><th rowspan="2" style="width:7%">วัน เดือน ปี</th>

@@ -276,7 +276,6 @@
       <div class="fy">ปีงบประมาณ ${Store.getFY()}</div><img class="doc-logo" src="assets/logo.png" alt="">
       <div class="t1">การรับ – จ่ายเงิน</div>
       <div class="t2">${U.esc(s.name || '')} ${U.esc(s.district || '')} จังหวัด${U.esc(s.province || '')}</div>
-      <div class="t3">${U.thaiMonthYear(m)}</div>
     </div>`));
     const table = U.el(`<table class="reg daily-print-table"><thead><tr>
       <th style="width:13%">วัน เดือน ปี</th><th style="width:6%">ที่</th><th style="width:38%">รายการ</th>

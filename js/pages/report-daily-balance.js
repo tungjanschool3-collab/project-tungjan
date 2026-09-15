@@ -115,8 +115,7 @@
     const node = U.el(`<section class="daily-balance-page" id="dailyBalanceDocument">
       <div class="report-top"><div class="report-fy">ปีงบประมาณ ${Store.getFY()}</div>
         <div class="report-org">ส่วนราชการ ${U.esc(s.name || '')}</div>
-        <div class="report-title">รายงานเงินคงเหลือประจำวัน</div>
-        <div class="report-date">ประจำวันที่ ${U.thaiDate(date, { full: true, fullYear: true })}</div></div>
+        <div class="report-title">รายงานเงินคงเหลือประจำวัน</div></div>
     <table class="daily-balance-table"><thead><tr><th style="width:32%">ประเภท</th><th style="width:12%">เงินสด</th>
         <th style="width:15%">เงินฝากธนาคาร</th><th style="width:12%">เงินฝาก<br>ส่วนราชการผู้เบิก</th><th style="width:12%">รวม</th><th style="width:17%">หมายเหตุ</th></tr></thead><tbody></tbody></table>
       <div class="daily-balance-words"><b>รวมเป็นเงิน</b>&nbsp;&nbsp; (${U.esc(thaiBahtText(grand.total))})</div>
@@ -184,6 +183,16 @@
   async function downloadPdf(node) {
     if (!window.html2pdf) { U.toast('ยังโหลดตัวสร้าง PDF ไม่สำเร็จ', 'err'); return; }
     U.toast('กำลังสร้างไฟล์ PDF...');
+    // รอให้ Sarabun โหลดครบก่อน html2canvas วาดข้อความลง PDF
+    if (document.fonts) {
+      await Promise.all([
+        document.fonts.load('400 16px Sarabun'),
+        document.fonts.load('500 16px Sarabun'),
+        document.fonts.load('600 16px Sarabun'),
+        document.fonts.load('700 16px Sarabun'),
+        document.fonts.ready
+      ]);
+    }
     await html2pdf().set({ margin: [8, 9, 8, 9], filename: `รายงานเงินคงเหลือประจำวัน_${reportDate}.pdf`,
       image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
