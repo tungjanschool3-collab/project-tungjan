@@ -130,7 +130,13 @@
       level: '', travel: false, clear_status: '', teacher_id: '', notes: '',
     }, t || {});
 
-    const accOpts = [{ value: '', label: '— เลือกบัญชี —' }].concat(D.accounts.filter(a => a.active !== false).map(a => ({ value: a.id, label: a.name })));
+    // แสดงเฉพาะบัญชีย่อยที่ใช้ทำทะเบียนคุม เรียงตามลำดับที่ตั้งค่าไว้และใส่เลขกำกับ 1, 2, 3, ...
+    const ledgerAccounts = D.accounts
+      .filter(a => a.active !== false)
+      .sort((a, b) => Number(a.sort || 0) - Number(b.sort || 0) || String(a.name || '').localeCompare(String(b.name || ''), 'th'));
+    const accOpts = [{ value: '', label: '— เลือกบัญชีที่ต้องทำทะเบียนคุม —' }].concat(
+      ledgerAccounts.map((a, index) => ({ value: a.id, label: `${index + 1}. ${a.name}` }))
+    );
     const teacherOpts = [{ value: '', label: '— ไม่ระบุ —' }].concat(D.teachers.map(x => ({ value: x.id, label: x.name })));
     const activityPrefix = '[กิจกรรม] ';
     const noteLines = String(v.notes || '').split('\n');
@@ -150,7 +156,7 @@
           <div class="field" style="grid-column:span 2"><label>รายการ *</label><input id="f_desc" value="${U.esc(v.description)}"></div>
           <div class="field"><label>โครงการ</label><select id="f_proj"><option value="">— เลือกโครงการ —</option></select></div>
           <div class="field"><label>กิจกรรม</label><select id="f_activity"><option value="">— เลือกกิจกรรมต่อ —</option></select></div>
-          <div class="field"><label>บัญชี</label><select id="f_acc"></select></div>
+          <div class="field"><label>บัญชีที่ต้องทำทะเบียนคุม</label><select id="f_acc"></select></div>
           <div class="field"><label>ที่เก็บเงิน (คงเหลือช่อง)</label><select id="f_bal"></select></div>
           <div class="field"><label>รายรับ</label><input id="f_in" type="number" step="0.01" value="${v.amount_in || 0}"></div>
           <div class="field"><label>รายจ่าย</label><input id="f_out" type="number" step="0.01" value="${v.amount_out || 0}"></div>
@@ -270,22 +276,24 @@
       <div class="fy">ปีงบประมาณ ${Store.getFY()}</div><img class="doc-logo" src="assets/logo.png" alt="">
       <div class="t1">การรับ – จ่ายเงิน</div>
       <div class="t2">${U.esc(s.name || '')} ${U.esc(s.district || '')} จังหวัด${U.esc(s.province || '')}</div>
-      <div class="t3">ประจำเดือน ${U.thaiMonthYear(m)}</div>
+      <div class="t3">${U.thaiMonthYear(m)}</div>
     </div>`));
-    const table = U.el(`<table class="reg"><thead><tr>
-      <th style="width:12%">วัน เดือน ปี</th><th style="width:6%">ที่</th><th>รายการ</th>
-      <th style="width:13%">รายจ่าย</th><th style="width:13%">รายรับ</th><th style="width:16%">บัญชี</th>
+    const table = U.el(`<table class="reg daily-print-table"><thead><tr>
+      <th style="width:13%">วัน เดือน ปี</th><th style="width:6%">ที่</th><th style="width:38%">รายการ</th>
+      <th style="width:13%">รายจ่าย</th><th style="width:13%">รายรับ</th><th style="width:17%">บัญชี</th>
     </tr></thead><tbody></tbody></table>`);
     const tb = table.querySelector('tbody');
     let last = null, i = 0, tIn = 0, tOut = 0;
     rows.forEach(t => {
       const acc = Store.accountById(t.account_id);
+      const activity = String(t.notes || '').split('\n')
+        .find(line => line.startsWith('[กิจกรรม] '))?.slice('[กิจกรรม] '.length) || '';
       const showDate = t.txn_date !== last; last = t.txn_date; i++;
       tIn += Number(t.amount_in || 0); tOut += Number(t.amount_out || 0);
       tb.appendChild(U.el(`<tr>
         <td class="c">${showDate ? U.esc(U.thaiDate(t.txn_date)) : ''}</td>
         <td class="c">${i}</td>
-        <td>${U.esc(t.description || '')}</td>
+        <td>${U.esc(t.description || '')}${activity ? ` <span class="daily-item-activity">[กิจกรรม] ${U.esc(activity)}</span>` : ''}</td>
         <td class="num">${U.money0(t.amount_out)}</td>
         <td class="num">${U.money0(t.amount_in)}</td>
         <td class="c">${acc ? U.esc(acc.name) : ''}</td></tr>`));

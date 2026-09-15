@@ -42,7 +42,7 @@
       <div class="fy">ปีงบประมาณ ${Store.getFY()}</div><img class="doc-logo" src="assets/logo.png" alt="">
       <div class="t1">ทะเบียนคุม ใบสั่งซื้อ / สั่งจ้าง / ไปราชการ</div>
       <div class="t2">${U.esc(s.name || '')} ${U.esc(s.district || '')} จังหวัด${U.esc(s.province || '')}</div>
-      <div class="t3">ประจำเดือน ${U.thaiMonthYear(m)}</div>
+      <div class="t3">${U.thaiMonthYear(m)}</div>
     </div>`));
     const table = U.el(`<table class="reg"><thead>
       <tr><th rowspan="2" style="width:9%">วัน เดือน ปี</th><th rowspan="2" style="width:8%">ใบสั่งซื้อ</th>
