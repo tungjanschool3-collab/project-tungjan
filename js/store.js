@@ -109,7 +109,7 @@ window.Store = (function () {
   }
 
   // ปีงบไทยของรายการ = คำนวณจากวันที่ (ต.ค.–ก.ย.)
-  const fyOfTxn = t => window.U ? U.fiscalYearOf(t.txn_date) : START_FY;
+  const fyOfTxn = t => window.U ? normalizeFY(U.fiscalYearOf(t.txn_date)) : START_FY;
 
   // รายชื่อปีงบที่มีข้อมูล (รวมปีเริ่มต้น + ปีงบปัจจุบันตามปฏิทิน) เรียงมาก→น้อย
   function fyList() {
@@ -138,7 +138,7 @@ window.Store = (function () {
   // ตัวกรองตามปีงบ
   function txnsFY(fy = getFY()) { return cache.transactions.filter(t => fyOfTxn(t) === fy); }
   function projectsFY(fy = getFY()) { return cache.projects.filter(p => normalizeFY(p.fiscal_year || START_FY) === fy); }
-  const fyOfMonth = ym => window.U ? U.fiscalYearOf(String(ym || '').slice(0, 7) + '-01') : START_FY;
+  const fyOfMonth = ym => window.U ? normalizeFY(U.fiscalYearOf(String(ym || '').slice(0, 7) + '-01')) : START_FY;
   function utilitiesFY(fy = getFY()) { return cache.utilityBills.filter(u => fyOfMonth(u.bill_month) === fy); }
 
   // ลบข้อมูลทั้งปีงบ (รายการในช่วงวันที่ของปีนั้น + โครงการของปีนั้น)
