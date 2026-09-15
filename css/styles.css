@@ -244,6 +244,14 @@ table.reg tr.sum td{font-weight:700;background:#fafafa}
 .voucher-sheet .voucher-reg tr.sum td{font-weight:700}
 .voucher-sheet .voucher-activity,.voucher-sheet .voucher-note{white-space:pre-line;overflow-wrap:anywhere}
 .voucher-sheet .sign-row{font-size:15px}
+.orders-sheet,.offbudget-sheet{font-size:15px}
+.orders-sheet .doc-head .fy,.offbudget-sheet .doc-head .fy{font-size:14px}
+.orders-sheet .doc-head .t1,.orders-sheet .doc-head .t2,
+.offbudget-sheet .doc-head .t1,.offbudget-sheet .doc-head .t2{font-size:16px;font-weight:700}
+.orders-sheet table.reg,.offbudget-sheet table.reg{font-size:15px}
+.orders-sheet table.reg th,.orders-sheet table.reg td,
+.offbudget-sheet table.reg th,.offbudget-sheet table.reg td{font-size:15px}
+.orders-sheet .sign-row,.offbudget-sheet .sign-row{font-size:15px}
 
 .print-only{display:none}
 .daily-balance-page{max-width:794px;margin:0 auto;background:#fff;color:#111;font-family:'Sarabun','TH Sarabun New','Segoe UI',Tahoma,sans-serif}
@@ -298,6 +306,12 @@ table.reg tr.sum td{font-weight:700;background:#fafafa}
   .voucher-sheet,.voucher-sheet .voucher-reg,.voucher-sheet .voucher-reg th,.voucher-sheet .voucher-reg td{font-size:15px}
   .voucher-sheet .doc-head .fy{font-size:14px}
   .voucher-sheet .doc-head .t1,.voucher-sheet .doc-head .t2{font-size:16px}
+  .orders-sheet,.offbudget-sheet,.orders-sheet table.reg,.offbudget-sheet table.reg,
+  .orders-sheet table.reg th,.orders-sheet table.reg td,
+  .offbudget-sheet table.reg th,.offbudget-sheet table.reg td{font-size:15px}
+  .orders-sheet .doc-head .fy,.offbudget-sheet .doc-head .fy{font-size:14px}
+  .orders-sheet .doc-head .t1,.orders-sheet .doc-head .t2,
+  .offbudget-sheet .doc-head .t1,.offbudget-sheet .doc-head .t2{font-size:16px}
   .daily-print-sheet .daily-print-table{font-size:16pt}
   .daily-print-sheet .daily-print-table th:nth-child(3),.daily-print-sheet .daily-print-table td:nth-child(3){font-size:14px}
   .daily-balance-page{page:dailyPortrait;width:190mm;max-width:190mm;padding:0!important}
