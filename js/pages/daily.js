@@ -63,6 +63,7 @@
     const rows = txnsOfMonth(filterMonth);
     const totIn = rows.reduce((s, t) => s + Number(t.amount_in || 0), 0);
     const totOut = rows.reduce((s, t) => s + Number(t.amount_out || 0), 0);
+    const grandTotal = totIn + totOut;
 
     // ----- stats -----
     const stats = U.el(`<div class="grid c3 no-print" style="margin-bottom:16px">
@@ -77,10 +78,10 @@
     const tw = card.querySelector('.table-wrap');
     const table = U.el(`<table class="data"><thead><tr>
       <th style="width:110px">วันเดือนปี</th><th style="width:70px">เอกสาร</th><th style="width:60px">เลขที่</th>
-      <th>รายการ</th><th>บัญชี</th><th class="num">รายจ่าย</th><th class="num">รายรับ</th><th style="width:90px"></th>
+      <th>รายการ</th><th>บัญชี</th><th class="num">รายจ่าย</th><th class="num">รายรับ</th><th class="num">รวม</th><th style="width:90px"></th>
     </tr></thead><tbody></tbody></table>`);
     const tb = table.querySelector('tbody');
-    if (!rows.length) tb.appendChild(U.el('<tr><td colspan="8"><div class="empty">ยังไม่มีรายการในเดือนนี้ — กด “+ เพิ่มรายการ”</div></td></tr>'));
+    if (!rows.length) tb.appendChild(U.el('<tr><td colspan="9"><div class="empty">ยังไม่มีรายการในเดือนนี้ — กด “+ เพิ่มรายการ”</div></td></tr>'));
 
     let lastDate = null;
     rows.forEach(t => {
@@ -94,6 +95,7 @@
         <td>${acc ? U.esc(acc.name) : '<span style="color:#aaa">—</span>'}</td>
         <td class="num ${t.amount_out ? 'money-out' : ''}">${U.money0(t.amount_out)}</td>
         <td class="num ${t.amount_in ? 'money-in' : ''}">${U.money0(t.amount_in)}</td>
+        <td class="num">${U.money(Number(t.amount_out || 0) + Number(t.amount_in || 0))}</td>
         <td><div class="row-actions"><button class="icon-btn">✏️</button><button class="icon-btn del">🗑️</button></div></td>
       </tr>`);
       tr.querySelectorAll('button')[0].onclick = () => openEditor(t);
@@ -108,7 +110,8 @@
     // แถวรวม
     const foot = U.el(`<tr class="sum" style="font-weight:700;background:#f7f9fe">
       <td colspan="5" style="text-align:right">รวมทั้งสิ้น</td>
-      <td class="num money-out">${U.money(totOut)}</td><td class="num money-in">${U.money(totIn)}</td><td></td></tr>`);
+      <td class="num money-out">${U.money(totOut)}</td><td class="num money-in">${U.money(totIn)}</td>
+      <td class="num">${U.money(grandTotal)}</td><td></td></tr>`);
     tb.appendChild(foot);
     tw.appendChild(table);
     c.appendChild(card);
@@ -279,7 +282,7 @@
     </div>`));
     const table = U.el(`<table class="reg daily-print-table"><thead><tr>
       <th style="width:13%">วัน เดือน ปี</th><th style="width:6%">ที่</th><th style="width:38%">รายการ</th>
-      <th style="width:13%">รายจ่าย</th><th style="width:13%">รายรับ</th><th style="width:17%">บัญชี</th>
+      <th style="width:11%">รายจ่าย</th><th style="width:11%">รายรับ</th><th style="width:11%">รวม</th><th style="width:11%">บัญชี</th>
     </tr></thead><tbody></tbody></table>`);
     const tb = table.querySelector('tbody');
     let last = null, i = 0, tIn = 0, tOut = 0;
@@ -295,10 +298,12 @@
         <td>${U.esc(t.description || '')}${activity ? ` <span class="daily-item-activity">[กิจกรรม] ${U.esc(activity)}</span>` : ''}</td>
         <td class="num">${U.money0(t.amount_out)}</td>
         <td class="num">${U.money0(t.amount_in)}</td>
+        <td class="num">${U.money(Number(t.amount_out || 0) + Number(t.amount_in || 0))}</td>
         <td class="c">${acc ? U.esc(acc.name) : ''}</td></tr>`));
     });
     tb.appendChild(U.el(`<tr class="sum"><td colspan="3" class="c">รวมทั้งสิ้น</td>
-      <td class="num">${U.money(tOut)}</td><td class="num">${U.money(tIn)}</td><td></td></tr>`));
+      <td class="num">${U.money(tOut)}</td><td class="num">${U.money(tIn)}</td>
+      <td class="num">${U.money(tOut + tIn)}</td><td></td></tr>`));
     sheet.appendChild(table);
     sheet.appendChild(signRow(s));
     return sheet;
@@ -311,7 +316,7 @@
       [`การรับ – จ่ายเงิน  ${s.name || ''}  ปีงบประมาณ ${Store.getFY()}`],
       [`ประจำเดือน ${U.thaiMonthYear(filterMonth)}`],
       [],
-      ['วัน เดือน ปี', 'ที่', 'ประเภท', 'เลขที่', 'รายการ', 'รายจ่าย', 'รายรับ', 'บัญชี'],
+      ['วัน เดือน ปี', 'ที่', 'ประเภท', 'เลขที่', 'รายการ', 'รายจ่าย', 'รายรับ', 'รวม', 'บัญชี'],
     ];
     let i = 0, last = null, tIn = 0, tOut = 0;
     rows.forEach(t => {
@@ -319,12 +324,13 @@
       const showDate = t.txn_date !== last; last = t.txn_date;
       tIn += Number(t.amount_in || 0); tOut += Number(t.amount_out || 0);
       aoa.push([showDate ? U.thaiDate(t.txn_date) : '', i, t.doc_type || '', t.doc_no || '',
-        t.description || '', Number(t.amount_out || 0), Number(t.amount_in || 0), acc ? acc.name : '']);
+        t.description || '', Number(t.amount_out || 0), Number(t.amount_in || 0),
+        Number(t.amount_out || 0) + Number(t.amount_in || 0), acc ? acc.name : '']);
     });
-    aoa.push(['', '', '', '', 'รวมทั้งสิ้น', tOut, tIn, '']);
+    aoa.push(['', '', '', '', 'รวมทั้งสิ้น', tOut, tIn, tOut + tIn, '']);
     Exporter.download(
       `การรับจ่าย_${filterMonth}.xlsx`, U.thaiMonthYear(filterMonth), aoa,
-      { cols: [14, 5, 8, 8, 40, 13, 13, 18], numCols: [5, 6], merges: ['A1:H1', 'A2:H2'] }
+      { cols: [14, 5, 8, 8, 36, 12, 12, 12, 16], numCols: [5, 6, 7], merges: ['A1:I1', 'A2:I2'] }
     );
   }
 
