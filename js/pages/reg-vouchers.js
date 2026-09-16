@@ -57,7 +57,7 @@
       <tr><th rowspan="2" class="voucher-date">วัน เดือน ปี</th><th colspan="2">เลขที่เอกสาร</th>
       <th rowspan="2">รายการ/โครงการ/กิจกรรม</th><th rowspan="2">จำนวนเงิน</th>
       <th rowspan="2" class="voucher-account">บัญชี</th><th rowspan="2">หมายเหตุ</th></tr>
-      <tr><th class="voucher-doc-type">บค./<br>บจ./<br>บย./<br>บร.</th><th>.../${fy}</th></tr>
+      <tr><th class="voucher-doc-type">บค./บจ./<br>บย./บร.</th><th>${fy}</th></tr>
       </thead><tbody></tbody></table>`);
     const tb = table.querySelector('tbody');
     let last = null, total = 0;
@@ -86,7 +86,7 @@
     const aoa = [
       [`ทะเบียนคุม บค./บจ./บย./บร.  ${s.name || ''}  ปีงบประมาณ ${Store.getFY()}`],
       [`ประจำเดือน ${U.thaiMonthYear(m)}`], [],
-      ['วัน เดือน ปี', 'บค./บจ./บย./บร.', `.../${fy}`, 'รายการ/โครงการ/กิจกรรม', 'จำนวนเงิน', 'บัญชี', 'หมายเหตุ'],
+      ['วัน เดือน ปี', 'บค./บจ./บย./บร.', fy, 'รายการ/โครงการ/กิจกรรม', 'จำนวนเงิน', 'บัญชี', 'หมายเหตุ'],
     ];
     let last = null, total = 0;
     rows.forEach(t => {
