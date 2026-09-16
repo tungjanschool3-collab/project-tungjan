@@ -279,6 +279,14 @@ table.reg tr.sum td{font-weight:700;background:#fafafa}
 .daily-mapping-table th:nth-child(2){width:22%}
 .daily-mapping-table th:nth-child(3){width:22%}
 .daily-mapping-table select,.daily-mapping-table input{width:100%;min-width:180px}
+.daily-mapping-table .mapping-parent-row td{background:#eaf0fb;border-top:2px solid #c7d3e8;vertical-align:middle;font-weight:700}
+.daily-mapping-table .mapping-ledger-row td{background:#fff;vertical-align:middle}
+.daily-mapping-table .mapping-empty-row td{padding-left:42px;color:var(--muted);font-style:italic;background:#fafbfe}
+.mapping-parent-name,.mapping-ledger-name{display:flex;align-items:flex-start;gap:8px}
+.mapping-parent-name>span{font-size:18px;line-height:1.2}
+.mapping-tree{color:#8a98ad;font-weight:700;margin-left:8px}
+.mapping-child-count{display:inline-block;padding:3px 9px;border-radius:999px;background:#fff;color:#51617a;font-size:12px;font-weight:600}
+.daily-mapping-table .mapping-grand-row td{background:#263f6a;color:#fff;font-weight:700;border-top:2px solid #142848}
 .mapping-hint{margin-top:10px;padding:10px 12px;border-radius:8px;background:#f1f5f9;color:#475569;font-size:13px}
 .daily-balance-words{text-align:center;font-size:16px;margin:8px 0 4px}
 .daily-balance-signatures{font-size:15px;margin-top:10px;text-align:center;line-height:1.35}
