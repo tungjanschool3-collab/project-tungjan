@@ -57,7 +57,15 @@ window.Store = (function () {
     cache.projectActivities = activities.data || [];
     cache.utilityBills = utilities.data || [];
     cache.events = events.data || [];
-    cache.transactions = txns.data || [];
+    // รายการนำเข้าเก่าบางชุดมีแถวซ้ำกันทุกช่อง โดยแถวหนึ่งไม่ได้ผูกบัญชี
+    // ใช้แถวที่ผูกบัญชีแล้วเพียงครั้งเดียว เพื่อไม่ให้ทะเบียนและรายงานรวมยอดซ้ำ
+    const loadedTransactions = txns.data || [];
+    const coreKey = t => [
+      t.txn_date || '', String(t.doc_type || '').replace(/\./g, '').trim(), t.doc_no ?? '',
+      String(t.description || '').trim(), Number(t.amount_out || 0), Number(t.amount_in || 0)
+    ].join('|');
+    const assignedKeys = new Set(loadedTransactions.filter(t => t.account_id).map(coreKey));
+    cache.transactions = loadedTransactions.filter(t => t.account_id || !assignedKeys.has(coreKey(t)));
     return true;
   }
 
