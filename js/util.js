@@ -88,7 +88,18 @@ window.U = (function () {
     const activity = activityOf(txn);
     return [item, activity].filter(Boolean).join(' — ');
   }
+  function itemProjectActivityText(txn) {
+    const item = String((txn && txn.description) || '').trim();
+    const project = String((txn && txn.project) || '').trim();
+    const activity = activityOf(txn);
+    const parts = item ? [item] : [];
+    const itemKey = item.toLocaleLowerCase('th');
+    const projectKey = project.toLocaleLowerCase('th');
+    if (project && (!item || (!itemKey.includes(projectKey) && !projectKey.includes(itemKey)))) parts.push(project);
+    if (activity && !parts.some(value => value.toLocaleLowerCase('th') === activity.toLocaleLowerCase('th'))) parts.push(activity);
+    return parts.join(' — ');
+  }
 
   return { TH_MONTH_ABBR, TH_MONTH_FULL, thaiDate, thaiMonthYear, money, money0,
-    todayISO, ymOf, fiscalYearOf, esc, el, $, $$, toast, uid, monthFull, activityOf, itemText };
+    todayISO, ymOf, fiscalYearOf, esc, el, $, $$, toast, uid, monthFull, activityOf, itemText, itemProjectActivityText };
 })();
