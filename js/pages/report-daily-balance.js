@@ -116,8 +116,8 @@
       <div class="report-top"><div class="report-fy">ปีงบประมาณ ${Store.getFY()}</div>
         <div class="report-org">ส่วนราชการ ${U.esc(s.name || '')}</div>
         <div class="report-title">รายงานเงินคงเหลือประจำวัน</div></div>
-    <table class="daily-balance-table"><thead><tr><th style="width:32%">ประเภท</th><th style="width:12%">เงินสด</th>
-        <th style="width:15%">เงินฝากธนาคาร</th><th style="width:12%">เงินฝาก<br>ส่วนราชการผู้เบิก</th><th style="width:12%">รวม</th><th style="width:17%">หมายเหตุ</th></tr></thead><tbody></tbody></table>
+    <table class="daily-balance-table"><thead><tr><th style="width:38%">ประเภท</th><th style="width:10%">เงินสด</th>
+        <th style="width:13%">เงินฝากธนาคาร</th><th style="width:11%">เงินฝาก<br>ส่วนราชการผู้เบิก</th><th style="width:11%">รวม</th><th style="width:17%">หมายเหตุ</th></tr></thead><tbody></tbody></table>
       <div class="daily-balance-words"><b>รวมเป็นเงิน</b>&nbsp;&nbsp; (${U.esc(thaiBahtText(grand.total))})</div>
       <div class="daily-balance-signatures"><div class="sign-two">
         <div>ลงชื่อ........................................ ผู้จัดทำรายการ<br>(${U.esc(s.finance_officer || '')})<br>ตำแหน่ง ครู</div>
