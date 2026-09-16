@@ -34,6 +34,8 @@ window.Store = (function () {
 
   async function loadAll() {
     if (!configured) return false;
+    window.dispatchEvent(new CustomEvent('app:data-loading', { detail: { loading: true } }));
+    try {
     const [school, positions, teachers, schoolAccounts, accounts, projects, activities, utilities, events, txns] = await Promise.all([
       sb.from('school_info').select('*').eq('id', 1).maybeSingle(),
       sb.from('positions').select('*').order('sort'),
@@ -47,7 +49,10 @@ window.Store = (function () {
       sb.from('transactions').select('*').order('txn_date').order('doc_no', { nullsFirst: true }).order('created_at'),
     ]);
     const err = [school, positions, teachers, schoolAccounts, accounts, projects, activities, utilities, events, txns].find(r => r.error);
-    if (err && err.error) { console.error(err.error); throw err.error; }
+    if (err && err.error) {
+      console.error(err.error);
+      throw err.error;
+    }
     cache.school = school.data || null;
     cache.positions = positions.data || [];
     cache.teachers = teachers.data || [];
@@ -67,6 +72,9 @@ window.Store = (function () {
     const assignedKeys = new Set(loadedTransactions.filter(t => t.account_id).map(coreKey));
     cache.transactions = loadedTransactions.filter(t => t.account_id || !assignedKeys.has(coreKey(t)));
     return true;
+    } finally {
+      window.dispatchEvent(new CustomEvent('app:data-loading', { detail: { loading: false } }));
+    }
   }
 
   // ---------- generic CRUD ----------

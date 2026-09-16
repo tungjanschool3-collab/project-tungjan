@@ -5,6 +5,33 @@ window.App = (function () {
   const pages = {};        // ทะเบียนหน้าต่าง ๆ (ลงทะเบียนจากไฟล์ js/pages/*)
   let current = null;
 
+  function skeletonMarkup(key = current || 'dashboard') {
+    const isDashboard = key === 'dashboard';
+    const isSettings = key === 'settings';
+    const cards = isDashboard ? 4 : (isSettings ? 3 : 2);
+    return `<div class="skeleton-page" aria-live="polite" aria-busy="true">
+      <span class="sr-only">กำลังโหลดข้อมูล</span>
+      <div class="skeleton-toolbar"><span class="skeleton sk-pill"></span><span class="skeleton sk-pill short"></span></div>
+      <div class="skeleton-grid ${isDashboard ? 'dashboard-grid' : ''}">
+        ${Array.from({ length: cards }, (_, i) => `<div class="skeleton-card">
+          <span class="skeleton sk-heading ${i % 2 ? 'short' : ''}"></span><span class="skeleton sk-value"></span><span class="skeleton sk-line"></span>
+        </div>`).join('')}
+      </div>
+      <div class="skeleton-panel">
+        <div class="skeleton-panel-head"><span class="skeleton sk-heading"></span><span class="skeleton sk-button"></span></div>
+        ${Array.from({ length: 7 }, (_, i) => `<div class="skeleton-row"><span class="skeleton sk-cell ${i % 3 === 0 ? 'wide' : ''}"></span><span class="skeleton sk-cell"></span><span class="skeleton sk-cell short"></span></div>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  function showSkeleton(key) {
+    const view = U.$('#view');
+    if (view) view.innerHTML = skeletonMarkup(key);
+    U.$('#app')?.classList.add('is-loading');
+  }
+
+  function hideSkeleton() { U.$('#app')?.classList.remove('is-loading'); }
+
   const NAV = [
     { group: 'ภาพรวม' },
     { key: 'dashboard', icon: '🏠', label: 'แดชบอร์ด' },
@@ -28,6 +55,10 @@ window.App = (function () {
   // ---------------- boot ----------------
   async function boot() {
     Store.init();
+    window.addEventListener('app:data-loading', e => {
+      if (e.detail && e.detail.loading) showSkeleton(current || location.hash.replace('#', '') || 'dashboard');
+      else hideSkeleton();
+    });
     document.addEventListener('click', e => {
       if (thaiCalendar && !thaiCalendar.contains(e.target) && !e.target.classList.contains('thai-date-trigger')) {
         closeThaiCalendar();
