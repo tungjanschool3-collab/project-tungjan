@@ -168,11 +168,11 @@
       <div class="t2">ประเภทเงิน: ${U.esc(acc.name)}&nbsp;&nbsp;${U.esc(s.name || '')} ${U.esc(s.office || '')}</div>
     </div>`));
     const table = U.el(`<table class="reg offbudget-reg"><thead>
-      <tr><th rowspan="2" style="width:7%">วัน เดือน ปี</th>
+      <tr><th rowspan="2" class="offbudget-date" style="width:7%">วัน เดือน ปี</th>
       <th colspan="2" style="width:10%">เลขที่เอกสาร</th>
       <th rowspan="2">รายการ/โครงการ/กิจกรรม</th><th rowspan="2" style="width:8%">รับ</th>
       <th colspan="2">จ่าย</th><th colspan="3">คงเหลือ</th><th rowspan="2" style="width:8%">หมายเหตุ</th></tr>
-      <tr><th style="width:6%">บค./บจ./<br>บย./บร.</th><th style="width:4%">${shortThaiYear(m)}</th>
+      <tr><th class="offbudget-doc-type" style="width:6%">บค./บจ./<br>บย./บร.</th><th style="width:4%">${shortThaiYear(m)}</th>
       <th style="width:7%">ลูกหนี้</th><th style="width:7%">ใบสำคัญ</th>
       <th style="width:7%">เงินสด</th><th style="width:8%">เงินฝากธนาคาร</th><th style="width:8%">เงินฝากส่วนราชการ</th></tr>
       </thead><tbody></tbody></table>`);
@@ -185,7 +185,7 @@
     data.rows.forEach(({ t, ps, bal }) => {
       const showDate = t.txn_date !== last; last = t.txn_date; i++;
       tb.appendChild(U.el(`<tr>
-        <td class="c">${showDate ? U.esc(U.thaiDate(t.txn_date)) : ''}</td>
+        <td class="c offbudget-date">${showDate ? U.esc(U.thaiDate(t.txn_date)) : ''}</td>
         <td class="c">${U.esc(t.doc_type || '')}</td>
         <td class="c">${U.esc(t.doc_no ?? '')}</td>
         <td>${U.esc(itemText(t))}</td>
