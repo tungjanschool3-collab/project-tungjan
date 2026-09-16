@@ -46,7 +46,7 @@
     const table = U.el(`<table class="reg"><thead>
       <tr><th rowspan="2" style="width:9%">วัน เดือน ปี</th><th rowspan="2" style="width:8%">ใบสั่งซื้อ</th>
       <th rowspan="2" style="width:8%">ใบสั่งจ้าง</th><th rowspan="2" style="width:8%">เลขบันทึกข้อความ</th>
-      <th rowspan="2">รายการ/โครงการ/กิจกรรม</th><th rowspan="2" style="width:8%">ระดับ</th>
+      <th rowspan="2">รายการ/โครงการ/กิจกรรม</th>
       <th colspan="2">ล้างหนี้</th><th rowspan="2" style="width:14%">ครูที่รับผิดชอบ</th></tr>
       <tr><th style="width:7%">เช็คล้างหนี้</th><th style="width:6%">ไม่ทำ</th></tr>
       </thead><tbody></tbody></table>`);
@@ -61,12 +61,11 @@
         <td class="c">${U.esc(t.hire_no || '')}</td>
         <td class="c">${U.esc(t.memo_no || '')}</td>
         <td class="item-project-activity">${U.esc(U.itemProjectActivityText(t))}${t.travel ? ' <b>(ไปราชการ)</b>' : ''}</td>
-        <td class="c">${U.esc(t.level || '')}</td>
         <td class="c">${t.clear_status === 'cleared' ? '✔' : ''}</td>
         <td class="c">${t.clear_status === 'none' ? '✔' : ''}</td>
         <td class="c">${U.esc(teacher ? teacher.name : '')}</td></tr>`));
     });
-    if (!rows.length) tb.appendChild(U.el('<tr><td colspan="9" class="c" style="padding:20px;color:#999">— ไม่มีรายการในเดือนนี้ —</td></tr>'));
+    if (!rows.length) tb.appendChild(U.el('<tr><td colspan="8" class="c" style="padding:20px;color:#999">— ไม่มีรายการในเดือนนี้ —</td></tr>'));
     sheet.appendChild(table);
     sheet.appendChild(window.TxnEditor.signRow(s));
     return wrap;
@@ -76,19 +75,19 @@
     const aoa = [
       [`ทะเบียนคุม ใบสั่งซื้อ/สั่งจ้าง/ไปราชการ  ${s.name || ''}  ปีงบประมาณ ${Store.getFY()}`],
       [`ประจำเดือน ${U.thaiMonthYear(m)}`], [],
-      ['วัน เดือน ปี', 'ใบสั่งซื้อ', 'ใบสั่งจ้าง', 'เลขบันทึกข้อความ', 'รายการ/โครงการ/กิจกรรม', 'ระดับ', 'เช็คล้างหนี้', 'ไม่ทำ', 'ครูที่รับผิดชอบ'],
+      ['วัน เดือน ปี', 'ใบสั่งซื้อ', 'ใบสั่งจ้าง', 'เลขบันทึกข้อความ', 'รายการ/โครงการ/กิจกรรม', 'เช็คล้างหนี้', 'ไม่ทำ', 'ครูที่รับผิดชอบ'],
     ];
     let last = null;
     rows.forEach(t => {
       const teacher = Store.teacherById(t.teacher_id);
       const showDate = t.txn_date !== last; last = t.txn_date;
       aoa.push([showDate ? U.thaiDate(t.txn_date) : '', t.po_no || '', t.hire_no || '', t.memo_no || '',
-        U.itemProjectActivityText(t) + (t.travel ? ' (ไปราชการ)' : ''), t.level || '',
+        U.itemProjectActivityText(t) + (t.travel ? ' (ไปราชการ)' : ''),
         t.clear_status === 'cleared' ? '✔' : '', t.clear_status === 'none' ? '✔' : '', teacher ? teacher.name : '']);
     });
     return aoa;
   }
-  function opts() { return { cols: [12, 10, 10, 12, 36, 8, 10, 8, 18], merges: ['A1:I1', 'A2:I2'] }; }
+  function opts() { return { cols: [12, 10, 10, 12, 42, 10, 8, 18], merges: ['A1:H1', 'A2:H2'] }; }
 
   function exportMonth(m) {
     const s = Store.data().school || {};
