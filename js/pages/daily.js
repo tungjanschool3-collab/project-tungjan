@@ -30,7 +30,11 @@
   function render(c) {
     const D = Store.data();
     const months = App.monthOptions();
-    if (!filterMonth) filterMonth = months[0] || U.ymOf(U.todayISO());
+    if (!filterMonth) {
+      // เปิดเดือนล่าสุดที่มีรายการจริงก่อน ไม่เลือกเดือนปัจจุบันที่ยังว่าง
+      const dataMonths = [...new Set(Store.txnsFY().map(t => U.ymOf(t.txn_date)).filter(Boolean))].sort().reverse();
+      filterMonth = dataMonths[0] || months[0] || U.ymOf(U.todayISO());
+    }
 
     // ----- toolbar -----
     const tools = U.el(`<div class="toolbar no-print">
