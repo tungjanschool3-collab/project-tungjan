@@ -39,6 +39,7 @@ window.App = (function () {
     { key: 'daily', icon: '✍️', label: 'บันทึกรับ–จ่าย (หน้า 1)' },
     { group: 'ทะเบียนคุม' },
     { key: 'reg-subsidy', icon: '💵', label: 'รับเงินอุดหนุน (รายงวด)' },
+    { key: 'reg-receipts', icon: '🧾', label: 'ใบเสร็จรับเงิน' },
     { key: 'reg-vouchers', icon: '📘', label: 'บค./บจ./บย./บร.' },
     { key: 'reg-orders', icon: '📗', label: 'ใบสั่งซื้อ/สั่งจ้าง/ไปราชการ' },
     { key: 'reg-offbudget', icon: '📙', label: 'เงินนอกงบประมาณ' },
