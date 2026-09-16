@@ -267,6 +267,8 @@ table.reg tr.sum td{font-weight:700;background:#fafafa}
 .voucher-sheet .voucher-reg th{font-size:14px;font-weight:700}
 .voucher-sheet .voucher-reg th.voucher-doc-type{font-size:12px;font-weight:400;line-height:1.3;text-align:center;vertical-align:middle}
 .voucher-sheet .voucher-reg td{font-size:14px;font-weight:400;overflow-wrap:anywhere}
+.voucher-sheet .voucher-reg .voucher-date{font-size:13px}
+.voucher-sheet .voucher-reg .voucher-account{font-size:12px}
 .voucher-sheet .voucher-reg tr.sum td{font-weight:700}
 .voucher-sheet .voucher-activity,.voucher-sheet .voucher-note{white-space:pre-line;overflow-wrap:anywhere}
 .voucher-sheet .sign-row{font-size:14px}
@@ -342,6 +344,8 @@ table.reg tr.sum td{font-weight:700;background:#fafafa}
   .voucher-sheet{page:voucherPortrait}
   .voucher-sheet,.voucher-sheet .voucher-reg,.voucher-sheet .voucher-reg th,.voucher-sheet .voucher-reg td{font-size:14px}
   .voucher-sheet .voucher-reg th.voucher-doc-type{font-size:12px;font-weight:400;text-align:center;vertical-align:middle}
+  .voucher-sheet .voucher-reg .voucher-date{font-size:13px}
+  .voucher-sheet .voucher-reg .voucher-account{font-size:12px}
   .voucher-sheet .doc-head .fy{font-size:15px}
   .voucher-sheet .doc-head .t1,.voucher-sheet .doc-head .t2{font-size:16px}
   .orders-sheet,.offbudget-sheet,.orders-sheet table.reg,.offbudget-sheet table.reg,

@@ -54,9 +54,9 @@
       <col style="width:9%"><col style="width:8%"><col style="width:6%"><col style="width:45%">
       <col style="width:11%"><col style="width:13%"><col style="width:8%">
       </colgroup><thead>
-      <tr><th rowspan="2">วัน เดือน ปี</th><th colspan="2">เลขที่เอกสาร</th>
+      <tr><th rowspan="2" class="voucher-date">วัน เดือน ปี</th><th colspan="2">เลขที่เอกสาร</th>
       <th rowspan="2">รายการ/โครงการ/กิจกรรม</th><th rowspan="2">จำนวนเงิน</th>
-      <th rowspan="2">บัญชี</th><th rowspan="2">หมายเหตุ</th></tr>
+      <th rowspan="2" class="voucher-account">บัญชี</th><th rowspan="2">หมายเหตุ</th></tr>
       <tr><th class="voucher-doc-type">บค./<br>บจ./<br>บย./<br>บร.</th><th>.../${fy}</th></tr>
       </thead><tbody></tbody></table>`);
     const tb = table.querySelector('tbody');
@@ -66,12 +66,12 @@
       const showDate = t.txn_date !== last; last = t.txn_date;
       const amt = amountOf(t); total += amt;
       tb.appendChild(U.el(`<tr>
-        <td class="c">${showDate ? U.esc(U.thaiDate(t.txn_date)) : ''}</td>
+        <td class="c voucher-date">${showDate ? U.esc(U.thaiDate(t.txn_date)) : ''}</td>
         <td class="c">${U.esc(t.doc_type || '')}</td>
         <td class="c">${t.doc_no ?? ''}</td>
         <td class="item-project-activity">${U.esc(U.itemProjectActivityText(t))}</td>
         <td class="num">${U.money0(amt)}</td>
-        <td class="c">${acc ? U.esc(acc.name) : ''}</td>
+        <td class="c voucher-account">${acc ? U.esc(acc.name) : ''}</td>
         <td class="voucher-note">${U.esc(plainNoteOf(t))}</td></tr>`));
     });
     if (!rows.length) tb.appendChild(U.el('<tr><td colspan="7" class="c" style="padding:20px;color:#999">— ไม่มีรายการในเดือนนี้ —</td></tr>'));
