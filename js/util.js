@@ -77,6 +77,18 @@ window.U = (function () {
   // เดือนไทยเต็มจาก 1-12
   function monthFull(m) { return TH_MONTH_FULL[m - 1] || ''; }
 
+  // รวมข้อความรายการกับกิจกรรมในรูปแบบเดียวกับทะเบียนราชการ
+  function activityOf(txn) {
+    const line = String((txn && txn.notes) || '').split(/\r?\n/)
+      .find(x => x.startsWith('[กิจกรรม] '));
+    return line ? line.slice('[กิจกรรม] '.length).trim() : '';
+  }
+  function itemText(txn) {
+    const item = String((txn && txn.description) || '').trim();
+    const activity = activityOf(txn);
+    return [item, activity].filter(Boolean).join(' — ');
+  }
+
   return { TH_MONTH_ABBR, TH_MONTH_FULL, thaiDate, thaiMonthYear, money, money0,
-    todayISO, ymOf, fiscalYearOf, esc, el, $, $$, toast, uid, monthFull };
+    todayISO, ymOf, fiscalYearOf, esc, el, $, $$, toast, uid, monthFull, activityOf, itemText };
 })();

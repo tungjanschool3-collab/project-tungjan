@@ -259,6 +259,7 @@ table.reg tr.sum td{font-weight:700;background:#fafafa}
 .daily-print-table th,.daily-print-table td{overflow-wrap:anywhere}
 .daily-print-table th:nth-child(3),.daily-print-table td:nth-child(3){font-size:14px}
 .daily-print-table .daily-item-activity{font-size:inherit}
+.item-project-activity{white-space:normal;overflow-wrap:anywhere;line-height:1.35}
 .voucher-sheet{font-size:15px}
 .voucher-sheet .doc-head .fy{font-size:14px;font-weight:400}
 .voucher-sheet .doc-head .t1,.voucher-sheet .doc-head .t2{font-size:16px;font-weight:700}

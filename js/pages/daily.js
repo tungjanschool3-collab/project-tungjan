@@ -82,7 +82,7 @@
     const tw = card.querySelector('.table-wrap');
     const table = U.el(`<table class="data"><thead><tr>
       <th style="width:110px">วันเดือนปี</th><th style="width:70px">เอกสาร</th><th style="width:60px">เลขที่</th>
-      <th>รายการ</th><th>บัญชี</th><th class="num">รายจ่าย</th><th class="num">รายรับ</th><th class="num">รวม</th><th style="width:90px"></th>
+      <th>รายการ/โครงการ/กิจกรรม</th><th>บัญชี</th><th class="num">รายจ่าย</th><th class="num">รายรับ</th><th class="num">รวม</th><th style="width:90px"></th>
     </tr></thead><tbody></tbody></table>`);
     const tb = table.querySelector('tbody');
     if (!rows.length) tb.appendChild(U.el('<tr><td colspan="9"><div class="empty">ยังไม่มีรายการในเดือนนี้ — กด “+ เพิ่มรายการ”</div></td></tr>'));
@@ -95,7 +95,7 @@
         <td>${showDate ? '<b>' + U.esc(U.thaiDate(t.txn_date)) + '</b>' : ''}</td>
         <td>${t.doc_type ? `<span class="pill doc doc-${t.doc_type}">${t.doc_type}</span>` : ''}</td>
         <td class="num">${t.doc_no ?? ''}</td>
-        <td>${U.esc(t.description || '')}</td>
+        <td class="item-project-activity">${U.esc(U.itemText(t))}</td>
         <td>${acc ? U.esc(acc.name) : '<span style="color:#aaa">—</span>'}</td>
         <td class="num ${t.amount_out ? 'money-out' : ''}">${U.money0(t.amount_out)}</td>
         <td class="num ${t.amount_in ? 'money-in' : ''}">${U.money0(t.amount_in)}</td>
@@ -285,21 +285,19 @@
       <div class="t2">${U.esc(s.name || '')} ${U.esc(s.district || '')} จังหวัด${U.esc(s.province || '')}</div>
     </div>`));
     const table = U.el(`<table class="reg daily-print-table"><thead><tr>
-      <th style="width:13%">วัน เดือน ปี</th><th style="width:6%">ที่</th><th style="width:38%">รายการ</th>
+      <th style="width:13%">วัน เดือน ปี</th><th style="width:6%">ที่</th><th style="width:38%">รายการ/โครงการ/กิจกรรม</th>
       <th style="width:11%">รายจ่าย</th><th style="width:11%">รายรับ</th><th style="width:11%">รวม</th><th style="width:11%">บัญชี</th>
     </tr></thead><tbody></tbody></table>`);
     const tb = table.querySelector('tbody');
     let last = null, i = 0, tIn = 0, tOut = 0;
     rows.forEach(t => {
       const acc = Store.accountById(t.account_id);
-      const activity = String(t.notes || '').split('\n')
-        .find(line => line.startsWith('[กิจกรรม] '))?.slice('[กิจกรรม] '.length) || '';
       const showDate = t.txn_date !== last; last = t.txn_date; i++;
       tIn += Number(t.amount_in || 0); tOut += Number(t.amount_out || 0);
       tb.appendChild(U.el(`<tr>
         <td class="c">${showDate ? U.esc(U.thaiDate(t.txn_date)) : ''}</td>
         <td class="c">${i}</td>
-        <td>${U.esc(t.description || '')}${activity ? ` <span class="daily-item-activity">[กิจกรรม] ${U.esc(activity)}</span>` : ''}</td>
+        <td class="item-project-activity">${U.esc(U.itemText(t))}</td>
         <td class="num">${U.money0(t.amount_out)}</td>
         <td class="num">${U.money0(t.amount_in)}</td>
         <td class="num">${U.money(Number(t.amount_out || 0) + Number(t.amount_in || 0))}</td>
@@ -320,7 +318,7 @@
       [`การรับ – จ่ายเงิน  ${s.name || ''}  ปีงบประมาณ ${Store.getFY()}`],
       [`ประจำเดือน ${U.thaiMonthYear(filterMonth)}`],
       [],
-      ['วัน เดือน ปี', 'ที่', 'ประเภท', 'เลขที่', 'รายการ', 'รายจ่าย', 'รายรับ', 'รวม', 'บัญชี'],
+      ['วัน เดือน ปี', 'ที่', 'ประเภท', 'เลขที่', 'รายการ/โครงการ/กิจกรรม', 'รายจ่าย', 'รายรับ', 'รวม', 'บัญชี'],
     ];
     let i = 0, last = null, tIn = 0, tOut = 0;
     rows.forEach(t => {
@@ -328,7 +326,7 @@
       const showDate = t.txn_date !== last; last = t.txn_date;
       tIn += Number(t.amount_in || 0); tOut += Number(t.amount_out || 0);
       aoa.push([showDate ? U.thaiDate(t.txn_date) : '', i, t.doc_type || '', t.doc_no || '',
-        t.description || '', Number(t.amount_out || 0), Number(t.amount_in || 0),
+        U.itemText(t), Number(t.amount_out || 0), Number(t.amount_in || 0),
         Number(t.amount_out || 0) + Number(t.amount_in || 0), acc ? acc.name : '']);
     });
     aoa.push(['', '', '', '', 'รวมทั้งสิ้น', tOut, tIn, tOut + tIn, '']);

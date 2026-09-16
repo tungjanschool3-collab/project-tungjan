@@ -92,15 +92,8 @@
   function nextYm(m) { const [y, mo] = m.split('-').map(Number); const d = new Date(y, mo, 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; }
 
   // รวมยอดรายการรับ-จ่ายของกิจกรรมย่อยในบัญชีและเดือนที่เลือก
-  function activityName(t) {
-    const line = String(t.notes || '').split('\n').find(x => x.startsWith('[กิจกรรม] '));
-    return line ? line.slice('[กิจกรรม] '.length).trim() : '';
-  }
-
-  function itemText(t) {
-    const activity = activityName(t);
-    return String(t.description || '') + (activity ? ` — ${activity}` : '');
-  }
+  const activityName = t => U.activityOf(t);
+  const itemText = t => U.itemText(t);
 
   function plainNotes(t) {
     return String(t.notes || '').split('\n').filter(x => !x.startsWith('[กิจกรรม] ')).join('\n');
@@ -188,7 +181,7 @@
         <td class="c offbudget-date">${showDate ? U.esc(U.thaiDate(t.txn_date)) : ''}</td>
         <td class="c">${U.esc(t.doc_type || '')}</td>
         <td class="c">${U.esc(t.doc_no ?? '')}</td>
-        <td>${U.esc(itemText(t))}</td>
+        <td class="item-project-activity">${U.esc(itemText(t))}</td>
         <td class="num">${U.money0(t.amount_in)}</td>
         <td class="num">${U.money0(ps.debtor)}</td>
         <td class="num">${U.money0(ps.voucher)}</td>
