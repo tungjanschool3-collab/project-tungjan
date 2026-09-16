@@ -57,7 +57,7 @@
       <tr><th rowspan="2">วัน เดือน ปี</th><th colspan="2">เลขที่เอกสาร</th>
       <th rowspan="2">รายการ/โครงการ/กิจกรรม</th><th rowspan="2">จำนวนเงิน</th>
       <th rowspan="2">บัญชี</th><th rowspan="2">หมายเหตุ</th></tr>
-      <tr><th>บค./บจ./บย./บร.</th><th>.../${fy}</th></tr>
+      <tr><th class="voucher-doc-type">บค./<br>บจ./<br>บย./<br>บร.</th><th>.../${fy}</th></tr>
       </thead><tbody></tbody></table>`);
     const tb = table.querySelector('tbody');
     let last = null, total = 0;
