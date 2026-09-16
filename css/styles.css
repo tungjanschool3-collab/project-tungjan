@@ -251,6 +251,8 @@ table.reg tr.sum td{font-weight:700;background:#fafafa}
 .orders-sheet table.reg,.offbudget-sheet table.reg{font-size:15px}
 .orders-sheet table.reg th,.orders-sheet table.reg td,
 .offbudget-sheet table.reg th,.offbudget-sheet table.reg td{font-size:15px}
+.offbudget-sheet .offbudget-doc-type{font-size:13px;font-weight:400;line-height:1.15}
+.offbudget-sheet .offbudget-date{font-size:13px;line-height:1.15;padding-left:1px;padding-right:1px;white-space:nowrap}
 .orders-sheet .sign-row,.offbudget-sheet .sign-row{font-size:15px}
 
 .print-only{display:none}
@@ -309,6 +311,8 @@ table.reg tr.sum td{font-weight:700;background:#fafafa}
   .orders-sheet,.offbudget-sheet,.orders-sheet table.reg,.offbudget-sheet table.reg,
   .orders-sheet table.reg th,.orders-sheet table.reg td,
   .offbudget-sheet table.reg th,.offbudget-sheet table.reg td{font-size:15px}
+  .offbudget-sheet .offbudget-doc-type{font-size:13px;font-weight:400}
+  .offbudget-sheet .offbudget-date{font-size:13px}
   .orders-sheet .doc-head .fy,.offbudget-sheet .doc-head .fy{font-size:14px}
   .orders-sheet .doc-head .t1,.orders-sheet .doc-head .t2,
   .offbudget-sheet .doc-head .t1,.offbudget-sheet .doc-head .t2{font-size:16px}
