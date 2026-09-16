@@ -3,7 +3,6 @@
 //  เลขใบเสร็จเก็บใน notes ด้วยแท็กภายใน เพื่อรองรับฐานข้อมูลเดิม
 // ============================================================
 (function () {
-  let filterMonth = '';
   const RECEIPT_TAG = '[เลขใบเสร็จ] ';
 
   function receiptNoOf(t) {
@@ -30,36 +29,29 @@
     return haystack.includes('ดอกเบี้ย') || /\binterest\b/i.test(haystack);
   }
 
-  function rowsOf(m) {
+  function rowsOf() {
     return Store.txnsFY()
-      .filter(t => Number(t.amount_in || 0) > 0 && !isInterest(t) && (!m || U.ymOf(t.txn_date) === m))
+      .filter(t => Number(t.amount_in || 0) > 0 && !isInterest(t))
       .sort((a, b) => (a.txn_date < b.txn_date ? -1 : a.txn_date > b.txn_date ? 1 : 0) ||
-        String(receiptNoOf(a)).localeCompare(String(receiptNoOf(b)), 'th', { numeric: true }));
+        Number(a.doc_no || 0) - Number(b.doc_no || 0) ||
+        String(a.created_at || '').localeCompare(String(b.created_at || '')));
   }
 
   function render(c) {
-    const months = App.monthOptions();
-    if (!filterMonth || !months.includes(filterMonth)) filterMonth = months[0] || U.ymOf(U.todayISO());
     const s = Store.data().school || {};
     const tools = U.el(`<div class="toolbar no-print">
-      <div class="field"><label>เดือน</label><select id="mSel"></select></div>
       <div class="spacer"></div>
       <button class="btn print" id="printBtn">🖨️ พิมพ์ A4</button>
-      <button class="btn excel" id="xlsBtn">⬇️ Excel เดือนนี้</button>
-      <button class="btn excel" id="xlsAllBtn">⬇️ Excel ทั้งปี (แยกชีตรายเดือน)</button>
+      <button class="btn excel" id="xlsBtn">⬇️ Excel ทั้งปี</button>
     </div>`);
-    const mSel = tools.querySelector('#mSel');
-    months.forEach(m => mSel.appendChild(U.el(`<option value="${m}" ${m === filterMonth ? 'selected' : ''}>${U.thaiMonthYear(m)}</option>`)));
-    mSel.onchange = () => { filterMonth = mSel.value; App.go('reg-receipts'); };
     tools.querySelector('#printBtn').onclick = () => window.print();
-    tools.querySelector('#xlsBtn').onclick = () => exportMonth(filterMonth);
-    tools.querySelector('#xlsAllBtn').onclick = exportAll;
+    tools.querySelector('#xlsBtn').onclick = exportYear;
     c.appendChild(tools);
-    c.appendChild(U.el('<div class="receipt-help no-print">กรอกเลขใบเสร็จในช่องตารางแล้วกด Enter หรือคลิกออกจากช่อง ระบบจะบันทึกให้อัตโนมัติ · รายการดอกเบี้ยจะไม่ถูกนำมาแสดง</div>'));
-    c.appendChild(buildSheet(rowsOf(filterMonth), filterMonth, s));
+    c.appendChild(U.el('<div class="receipt-help no-print">แสดงรายรับทั้งปีงบประมาณเรียงตามวันที่ โดยไม่แยกเดือน · กรอกเลขใบเสร็จแล้วกด Enter หรือคลิกออกจากช่องเพื่อบันทึก · รายการดอกเบี้ยจะไม่ถูกนำมาแสดง</div>'));
+    c.appendChild(buildSheet(rowsOf(), s));
   }
 
-  function buildSheet(rows, m, s) {
+  function buildSheet(rows, s) {
     const wrap = U.el('<div class="card"><div class="sheet receipt-sheet"></div></div>');
     const sheet = wrap.querySelector('.sheet');
     sheet.appendChild(U.el(`<div class="doc-head">
@@ -103,17 +95,17 @@
       };
       tb.appendChild(tr);
     });
-    if (!rows.length) tb.appendChild(U.el('<tr><td colspan="5" class="c" style="padding:20px;color:#999">— ไม่มีรายการรายรับ (ไม่รวมดอกเบี้ย) ในเดือนนี้ —</td></tr>'));
+    if (!rows.length) tb.appendChild(U.el('<tr><td colspan="5" class="c" style="padding:20px;color:#999">— ไม่มีรายการรายรับ (ไม่รวมดอกเบี้ย) ในปีงบประมาณนี้ —</td></tr>'));
     tb.appendChild(U.el(`<tr class="sum"><td colspan="3" class="c">รวมทั้งสิ้น</td><td class="num">${U.money(total)}</td><td></td></tr>`));
     sheet.appendChild(table);
     sheet.appendChild(window.TxnEditor.signRow(s));
     return wrap;
   }
 
-  function aoaOf(rows, m, s) {
+  function aoaOf(rows, s) {
     const aoa = [
       [`ทะเบียนคุมใบเสร็จรับเงิน  ${s.name || ''}  ปีงบประมาณ ${Store.getFY()}`],
-      [`ประจำเดือน ${U.thaiMonthYear(m)}`], [],
+      [],
       ['วัน เดือน ปี', 'เลขที่ใบเสร็จรับเงิน', 'รายการ', 'จำนวนเงิน', 'หมายเหตุ'],
     ];
     let total = 0;
@@ -125,25 +117,17 @@
     return aoa;
   }
 
-  function exportMonth(m) {
+  function exportYear() {
     const s = Store.data().school || {};
-    Exporter.download(`ทะเบียนคุมใบเสร็จรับเงิน_${m}.xlsx`, U.thaiMonthYear(m), aoaOf(rowsOf(m), m, s),
-      { cols: [16, 22, 58, 16, 20], numCols: [3], merges: ['A1:E1', 'A2:E2'] });
-  }
-
-  function exportAll() {
-    const s = Store.data().school || {};
-    const months = Array.from(new Set(Store.txnsFY().filter(t => Number(t.amount_in || 0) > 0 && !isInterest(t)).map(t => U.ymOf(t.txn_date)))).sort();
-    if (!months.length) { U.toast('ยังไม่มีข้อมูลรายรับที่ไม่ใช่ดอกเบี้ย', 'err'); return; }
-    Exporter.downloadMulti('ทะเบียนคุมใบเสร็จรับเงิน_ทั้งปี.xlsx', months.map(m => ({
-      name: U.thaiMonthYear(m), aoa: aoaOf(rowsOf(m), m, s),
-      opts: { cols: [16, 22, 58, 16, 20], numCols: [3], merges: ['A1:E1', 'A2:E2'] }
-    })));
+    const rows = rowsOf();
+    if (!rows.length) { U.toast('ยังไม่มีข้อมูลรายรับที่ไม่ใช่ดอกเบี้ย', 'err'); return; }
+    Exporter.download(`ทะเบียนคุมใบเสร็จรับเงิน_ปีงบประมาณ_${Store.getFY()}.xlsx`, 'ทะเบียนใบเสร็จ', aoaOf(rows, s),
+      { cols: [16, 22, 58, 16, 20], numCols: [3], merges: ['A1:E1'] });
   }
 
   App.register('reg-receipts', {
     title: 'ทะเบียนคุมใบเสร็จรับเงิน',
-    subtitle: 'ดึงรายรับทั้งหมดอัตโนมัติ ยกเว้นดอกเบี้ย และกรอกเลขใบเสร็จได้เอง',
+    subtitle: 'แสดงรายรับทั้งปีงบประมาณเรียงต่อเนื่อง ยกเว้นดอกเบี้ย และกรอกเลขใบเสร็จได้เอง',
     render,
   });
 })();
