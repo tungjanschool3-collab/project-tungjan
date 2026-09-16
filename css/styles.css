@@ -268,6 +268,7 @@ table.reg tr.sum td{font-weight:700;background:#fafafa}
 .daily-balance-table .section td{font-weight:700;background:#f4f5f1}
 .daily-balance-table .num{text-align:right;font-variant-numeric:tabular-nums}
 .daily-balance-table .total td{font-weight:700;border-top:1.5px solid #111}
+.daily-balance-table .contract-deposit-row td:first-child{font-size:13px;line-height:1.2}
 .daily-report-note{font-size:15px;white-space:pre-line;text-align:center;vertical-align:top!important;line-height:1.5!important}
 .daily-note-field{min-width:300px;flex:1}
 .daily-note-field textarea{min-height:74px;resize:vertical}
@@ -331,6 +332,7 @@ table.reg tr.sum td{font-weight:700;background:#fafafa}
   .daily-balance-page .report-fy{font-size:15px}
   .daily-balance-table{font-size:15px}
   .daily-balance-table th,.daily-balance-table td{font-size:15px}
+  .daily-balance-table .contract-deposit-row td:first-child{font-size:13px}
   .daily-balance-table th,.daily-balance-table td{padding:.8mm 1.2mm}
   .daily-balance-words{font-size:16px}
   .daily-report-note,.daily-balance-signatures{font-size:15px}
