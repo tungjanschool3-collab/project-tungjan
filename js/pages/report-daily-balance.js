@@ -138,8 +138,8 @@
       <div class="report-top"><div class="report-fy">ปีงบประมาณ ${Store.getFY()}</div>
         <div class="report-org">ส่วนราชการ ${U.esc(s.name || '')}</div>
         <div class="report-title">รายงานเงินคงเหลือประจำวัน</div></div>
-    <table class="daily-balance-table"><thead><tr><th style="width:38%">ประเภท</th><th style="width:10%">เงินสด</th>
-        <th style="width:13%">เงินฝากธนาคาร</th><th style="width:11%">เงินฝาก<br>ส่วนราชการผู้เบิก</th><th style="width:11%">รวม</th><th style="width:17%">หมายเหตุ</th></tr></thead><tbody></tbody></table>
+    <table class="daily-balance-table"><thead><tr><th style="width:36%">ประเภท</th><th style="width:10%">เงินสด</th>
+        <th style="width:13%">เงินฝากธนาคาร</th><th style="width:11%">เงินฝาก<br>ส่วนราชการผู้เบิก</th><th style="width:14%">รวม</th><th style="width:16%">หมายเหตุ</th></tr></thead><tbody></tbody></table>
       <div class="daily-balance-words"><b>รวมเป็นเงิน</b>&nbsp;&nbsp; (${U.esc(thaiBahtText(grand.total))})</div>
       <div class="daily-balance-signatures"><div class="sign-two">
         <div>ลงชื่อ........................................ ผู้จัดทำรายการ<br>(${U.esc(s.finance_officer || '')})<br>ตำแหน่ง ครู</div>
@@ -156,7 +156,8 @@
       if (!group.length) body.appendChild(U.el('<tr><td>ไม่มีรายการ</td><td class="num">-</td><td class="num">-</td><td class="num">-</td><td class="num">-</td><td></td></tr>'));
       group.forEach((r, i) => {
         const note = showNote ? (i === group.length - 1 ? noteLines.slice(i).join('\n') : (noteLines[i] || '')) : '';
-        body.appendChild(U.el(`<tr><td>${U.esc(r.name)}</td><td class="num">${U.money0(r.cash) || '-'}</td>
+        const rowClass = r.name === 'เงินประกันสัญญา (เงินส่วนราชการเป็นผู้เบิก)' ? ' class="contract-deposit-row"' : '';
+        body.appendChild(U.el(`<tr${rowClass}><td>${U.esc(r.name)}</td><td class="num">${U.money0(r.cash) || '-'}</td>
           <td class="num">${U.money0(r.bank) || '-'}</td><td class="num">${U.money0(r.gov) || '-'}</td><td class="num">${U.money0(r.total) || '-'}</td>
           <td class="daily-report-note">${U.esc(note)}</td></tr>`));
       });
