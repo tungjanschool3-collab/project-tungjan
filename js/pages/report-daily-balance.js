@@ -71,6 +71,28 @@
       gov: s.gov + r.gov, total: s.total + r.total }), { cash: 0, bank: 0, gov: 0, total: 0 });
   }
 
+  function accountHierarchy(rows) {
+    const D = Store.data();
+    const byParent = new Map();
+    rows.forEach(r => {
+      const parentId = r.account.school_account_id || '';
+      if (!byParent.has(parentId)) byParent.set(parentId, []);
+      byParent.get(parentId).push(r);
+    });
+    const parentIds = new Set(D.schoolAccounts.map(a => a.id));
+    const parents = [...D.schoolAccounts]
+      .sort((a, b) => Number(a.sort || 0) - Number(b.sort || 0))
+      .map(account => {
+        const children = byParent.get(account.id) || [];
+        return { account, children, ...totals(children) };
+      });
+    const unassigned = [...(byParent.get('') || [])];
+    byParent.forEach((children, parentId) => {
+      if (parentId && !parentIds.has(parentId)) unassigned.push(...children);
+    });
+    return { parents, unassigned, all: totals(rows) };
+  }
+
   function groupedRows(rows) {
     const grouped = new Map();
     rows.forEach(r => {
@@ -145,23 +167,23 @@
   }
 
   function mappingPanel(date, rebuild) {
-    const rows = rowsAt(date), saved = mappingData();
+    const rows = rowsAt(date), saved = mappingData(), hierarchy = accountHierarchy(rows);
     const panel = U.el(`<div class="card no-print daily-mapping-panel">
       <div class="daily-mapping-head"><div><h3>ตั้งค่าบัญชีโรงเรียนสำหรับรายงาน</h3>
-        <div class="sub">แก้ชื่อที่แสดงและเลือกว่าบัญชีแต่ละเล่มต้องไปรวมในรายการใด ตัวเลขด้านล่างเป็นยอดตามสมุดบัญชีถึงวันที่รายงาน</div></div>
+        <div class="sub">บัญชีหลักดึงจากข้อมูลโรงเรียน โดยทะเบียนคุมจะแสดงเป็นรายการย่อย ยอดบัญชีหลักคำนวณจากผลรวมทะเบียนย่อยโดยไม่นับซ้ำ</div></div>
         <button class="btn ghost sm" id="resetMapping">คืนค่าจับคู่อัตโนมัติ</button></div>
       <div class="table-wrap"><table class="data daily-mapping-table"><thead><tr>
-        <th>บัญชีโรงเรียน</th><th>นำไปรวมในรายการ</th><th>ชื่อที่แสดงในรายงาน</th>
+        <th>บัญชีหลัก / ทะเบียนคุมย่อย</th><th>นำไปรวมในรายการ</th><th>ชื่อที่แสดงในรายงาน</th>
         <th class="num">เงินสด</th><th class="num">เงินฝากธนาคาร</th><th class="num">ฝากส่วนราชการ</th><th class="num">รวม</th>
       </tr></thead><tbody></tbody></table></div>
-      <div class="mapping-hint">การตั้งค่านี้ใช้จัดรายงานเท่านั้น ไม่เปลี่ยนชื่อบัญชีหรือยอดในสมุดบัญชี และส่วนนี้จะไม่แสดงตอนพิมพ์หรือดาวน์โหลด PDF</div>
+      <div class="mapping-hint">ยอดแถวบัญชีหลักเป็นผลรวมเพื่อการตรวจสอบเท่านั้น สูตรรายงานจะรวมจากทะเบียนคุมย่อยแต่ละรายการเพียงครั้งเดียว</div>
     </div>`);
     const body = panel.querySelector('tbody');
-    rows.forEach(r => {
+    const appendLedger = r => {
       const current = saved[r.account.id] || {};
       const target = current.target || inferredName(r.account);
       const label = current.label || target;
-      const tr = U.el(`<tr><td><b>${U.esc(r.account.name || '')}</b><div class="sub">${U.esc(r.account.code || '')}</div></td>
+      const tr = U.el(`<tr class="mapping-ledger-row"><td><div class="mapping-ledger-name"><span class="mapping-tree">└</span><div><b>${U.esc(r.account.name || '')}</b><div class="sub">ทะเบียนคุม · ${U.esc(r.account.code || r.account.id || '')}</div></div></div></td>
         <td><select class="mapping-target"></select></td>
         <td><input class="mapping-label" value="${U.esc(label)}" aria-label="ชื่อที่แสดงของ ${U.esc(r.account.name || '')}"></td>
         <td class="num">${U.money(r.cash)}</td><td class="num">${U.money(r.bank)}</td><td class="num">${U.money(r.gov)}</td><td class="num"><b>${U.money(r.total)}</b></td></tr>`);
@@ -175,7 +197,24 @@
       select.onchange = () => { tr.querySelector('.mapping-label').value = select.value; storeRow(); };
       tr.querySelector('.mapping-label').onchange = storeRow;
       body.appendChild(tr);
-    });
+    };
+    const appendParent = (parent, children, sum) => {
+      body.appendChild(U.el(`<tr class="mapping-parent-row"><td><div class="mapping-parent-name"><span>🏦</span><div><b>${U.esc(parent.name || '')}</b><div class="sub">บัญชีหลัก${parent.account_no ? ` · ${U.esc(parent.account_no)}` : ''}</div></div></div></td>
+        <td colspan="2"><span class="mapping-child-count">${children.length} ทะเบียนคุมย่อย</span></td>
+        <td class="num">${U.money(sum.cash)}</td><td class="num">${U.money(sum.bank)}</td><td class="num">${U.money(sum.gov)}</td><td class="num"><b>${U.money(sum.total)}</b></td></tr>`));
+      if (!children.length) body.appendChild(U.el('<tr class="mapping-empty-row"><td colspan="7">ยังไม่มีทะเบียนคุมภายใต้บัญชีหลักนี้</td></tr>'));
+      children.forEach(appendLedger);
+    };
+    hierarchy.parents.forEach(p => appendParent(p.account, p.children, p));
+    if (hierarchy.unassigned.length) {
+      const sum = totals(hierarchy.unassigned);
+      appendParent({ name: 'ยังไม่จัดเข้าบัญชีหลัก' }, hierarchy.unassigned, sum);
+    }
+    if (!hierarchy.parents.length && !hierarchy.unassigned.length) {
+      body.appendChild(U.el('<tr><td colspan="7"><div class="empty">ยังไม่มีบัญชีหลักหรือทะเบียนคุม</div></td></tr>'));
+    }
+    body.appendChild(U.el(`<tr class="mapping-grand-row"><td colspan="3">รวมทุกบัญชีหลัก</td><td class="num">${U.money(hierarchy.all.cash)}</td>
+      <td class="num">${U.money(hierarchy.all.bank)}</td><td class="num">${U.money(hierarchy.all.gov)}</td><td class="num"><b>${U.money(hierarchy.all.total)}</b></td></tr>`));
     panel.querySelector('#resetMapping').onclick = () => { localStorage.removeItem(MAPPING_KEY); rebuild(); U.toast('คืนค่าการจับคู่อัตโนมัติแล้ว'); };
     return panel;
   }
