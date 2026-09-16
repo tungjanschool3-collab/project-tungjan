@@ -28,8 +28,9 @@ h1,h2,h3,h4{margin:0;font-weight:700}
 .login-card .logo img{width:100%;height:100%;object-fit:contain}
 .login-card h2{font-size:20px}
 .login-card p{color:var(--muted);margin:6px 0 22px;font-size:14px}
-.login-card input{width:100%;text-align:center;letter-spacing:6px;font-size:22px;padding:12px;border:2px solid var(--line);border-radius:12px;margin-bottom:14px}
-.login-card input:focus{outline:none;border-color:var(--brand)}
+.login-card input,.login-card select{width:100%;text-align:center;padding:12px;border:2px solid var(--line);border-radius:12px;margin-bottom:14px;background:#fff}
+.login-card #codeInput{letter-spacing:6px;font-size:22px}
+.login-card input:focus,.login-card select:focus{outline:none;border-color:var(--brand)}
 .login-err{color:var(--danger);min-height:20px;font-size:13px;margin-bottom:6px}
 
 /* ---------- App layout ---------- */
@@ -99,6 +100,8 @@ table.data td{padding:9px 11px;border-bottom:1px solid var(--line2);vertical-ali
 table.data tr:hover td{background:#fafbfe}
 table.data .num{text-align:right;font-variant-numeric:tabular-nums}
 .pill{display:inline-block;padding:2px 10px;border-radius:20px;font-size:11.5px;font-weight:700}
+.status-pill{display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700}
+.status-pill.active{background:var(--teal-soft);color:var(--teal)}.status-pill.inactive{background:var(--danger-soft);color:var(--danger)}
 .doc-บค{background:#e7ecff;color:#2f49b0}.doc-บจ{background:#fff3e0;color:#b45309}
 .doc-บย{background:#f0e7ff;color:#7048e8}.doc-บร{background:#e3f7f1;color:#0ca678}
 .money-in{color:var(--in);font-weight:600}.money-out{color:var(--out);font-weight:600}

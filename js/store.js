@@ -4,6 +4,7 @@
 window.Store = (function () {
   let sb = null;                 // supabase client
   let configured = false;
+  let session = null;
   let currentFY = null;          // ปีงบประมาณที่กำลังดู/บันทึก (พ.ศ.)
   const START_FY = 2569;
   const cache = {                // แคชข้อมูลทั้งหมด
@@ -21,8 +22,10 @@ window.Store = (function () {
 
   function init() {
     const c = window.APP_CONFIG || {};
+    try { session = JSON.parse(sessionStorage.getItem('appSession') || 'null'); } catch (e) { session = null; }
     if (c.SUPABASE_URL && c.SUPABASE_ANON_KEY && window.supabase) {
-      sb = window.supabase.createClient(c.SUPABASE_URL, c.SUPABASE_ANON_KEY);
+      const headers = session && session.token ? { 'x-app-session': session.token } : {};
+      sb = window.supabase.createClient(c.SUPABASE_URL, c.SUPABASE_ANON_KEY, { global: { headers } });
       configured = true;
     }
     return configured;
@@ -30,6 +33,24 @@ window.Store = (function () {
 
   function isConfigured() { return configured; }
   function client() { return sb; }
+  function getSession() { return session; }
+  async function login(code, password, admin = false) {
+    if (!sb) init();
+    const { data, error } = await sb.rpc('app_login', { p_code: code || '', p_password: password, p_admin: admin });
+    if (error) throw error;
+    session = data;
+    sessionStorage.setItem('appSession', JSON.stringify(session));
+    init();
+    return session;
+  }
+  async function validateSession() {
+    if (!session || !session.token) return false;
+    const { data, error } = await sb.rpc('app_whoami');
+    if (error || !data) { clearSession(); return false; }
+    return true;
+  }
+  function clearSession() { session = null; sessionStorage.removeItem('appSession'); }
+  async function logout() { try { if (sb && session) await sb.rpc('app_logout'); } finally { clearSession(); } }
   function data() { return cache; }
 
   async function loadAll() {
@@ -79,7 +100,8 @@ window.Store = (function () {
 
   // ---------- generic CRUD ----------
   async function insert(table, row) {
-    const { data, error } = await sb.from(table).insert(row).select().single();
+    const payload = Object.assign({}, row, { school_id: session.school_id });
+    const { data, error } = await sb.from(table).insert(payload).select().single();
     if (error) throw error;
     return data;
   }
@@ -93,8 +115,8 @@ window.Store = (function () {
     if (error) throw error;
   }
   async function upsertSchool(patch) {
-    const row = Object.assign({ id: 1 }, patch, { updated_at: new Date().toISOString() });
-    const { data, error } = await sb.from('school_info').upsert(row).select().single();
+    const row = Object.assign({ id: 1, school_id: session.school_id }, patch, { updated_at: new Date().toISOString() });
+    const { data, error } = await sb.from('school_info').upsert(row, { onConflict: 'school_id,id' }).select().single();
     if (error) throw error;
     cache.school = data;
     return data;
@@ -110,7 +132,8 @@ window.Store = (function () {
   // เพิ่มหลายแถวพร้อมกัน (ใช้ตอนนำเข้า CSV)
   async function insertMany(table, rows) {
     if (!rows || !rows.length) return [];
-    const { data, error } = await sb.from(table).insert(rows).select();
+    const payload = rows.map(row => Object.assign({}, row, { school_id: session.school_id }));
+    const { data, error } = await sb.from(table).insert(payload).select();
     if (error) throw error;
     return data || [];
   }
@@ -168,13 +191,32 @@ window.Store = (function () {
     if (r.error) throw r.error;
   }
 
+  async function adminSchools() {
+    const { data, error } = await sb.rpc('app_admin_list_schools');
+    if (error) throw error; return data || [];
+  }
+  async function adminCreateSchool(v) {
+    const { data, error } = await sb.rpc('app_admin_create_school', {
+      p_code: v.code, p_name: v.name, p_password: v.password,
+      p_office: v.office || '', p_district: v.district || '', p_province: v.province || ''
+    });
+    if (error) throw error; return data;
+  }
+  async function adminSetSchool(v) {
+    const { data, error } = await sb.rpc('app_admin_set_school', {
+      p_school_id: v.id, p_name: v.name, p_active: v.active, p_password: v.password || null
+    });
+    if (error) throw error; return data;
+  }
+
   // เลขที่เอกสารถัดไป (running number) ต่อปีงบ
   function nextDocNo() {
     const nums = txnsFY().map(t => t.doc_no).filter(n => Number.isFinite(n));
     return (nums.length ? Math.max(...nums) : 0) + 1;
   }
 
-  return { init, isConfigured, client, data, loadAll, insert, insertMany, update, remove,
+  return { init, isConfigured, client, getSession, login, validateSession, logout, data, loadAll, insert, insertMany, update, remove,
     upsertSchool, accountById, teacherById, positionById, schoolAccountById, projectById, projectByName, nextDocNo,
+    adminSchools, adminCreateSchool, adminSetSchool,
     START_FY, fyList, getFY, setFY, txnsFY, projectsFY, utilitiesFY, deleteFY };
 })();

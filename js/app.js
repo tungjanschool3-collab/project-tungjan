@@ -66,36 +66,36 @@ window.App = (function () {
       }
     });
     // ปุ่มล็อกอิน
-    const inp = U.$('#codeInput'), err = U.$('#loginErr');
+    const inp = U.$('#codeInput'), schoolInp = U.$('#schoolCodeInput'), mode = U.$('#loginMode'), err = U.$('#loginErr');
     U.$('#loginBtn').addEventListener('click', tryLogin);
     inp.addEventListener('keydown', e => { if (e.key === 'Enter') tryLogin(); });
-    function tryLogin() {
-      const code = (window.APP_CONFIG && window.APP_CONFIG.ACCESS_CODE) || '044357246';
-      if (inp.value.trim() === code) {
-        sessionStorage.setItem('authed', '1');
-        enterApp(false);
-      } else { err.textContent = 'รหัสไม่ถูกต้อง ลองอีกครั้ง'; inp.select(); }
+    mode.onchange = () => { schoolInp.style.display = mode.value === 'admin' ? 'none' : ''; err.textContent=''; };
+    async function tryLogin() {
+      if(mode.value==='school' && !schoolInp.value.trim()){err.textContent='กรุณากรอกรหัสโรงเรียน';schoolInp.focus();return;}
+      if(!inp.value){err.textContent='กรุณากรอกรหัสผ่าน';inp.focus();return;}
+      const btn=U.$('#loginBtn'); btn.disabled=true; btn.textContent='กำลังเข้าสู่ระบบ...'; err.textContent='';
+      try { const s=await Store.login(schoolInp.value.trim(),inp.value,mode.value==='admin'); await enterApp(s.role); }
+      catch(e){err.textContent=(e.message||'เข้าสู่ระบบไม่สำเร็จ').replace(/^.*?:\s*/,'');inp.select();}
+      finally{btn.disabled=false;btn.textContent='เข้าสู่ระบบ';}
     }
-    // เข้าระบบอัตโนมัติถ้าล็อกอินไว้แล้วในเซสชันนี้
-    if (sessionStorage.getItem('authed') === '1') enterApp(false);
-    else if ((location.hash.replace('#', '') || 'dashboard') === 'dashboard') enterApp(true);
+    if (Store.getSession() && await Store.validateSession()) enterApp(Store.getSession().role);
     else U.$('#loginScreen').style.display = 'flex';
   }
 
-  async function enterApp(publicOnly = false) {
+  async function enterApp(role = 'school') {
     U.$('#loginScreen').style.display = 'none';
     U.$('#app').style.display = 'block';
-    U.$('#app').classList.toggle('public-view', publicOnly);
-    renderNav(publicOnly);
-    await reload(true);
+    U.$('#app').classList.remove('public-view');
+    renderNav(role);
+    if(role==='school') await reload(true);
     // ไปหน้าเริ่มต้น
-    const requested = location.hash.replace('#', '') || 'dashboard';
-    const start = publicOnly ? 'dashboard' : requested;
+    const requested = location.hash.replace('#', '') || (role==='admin'?'admin-schools':'dashboard');
+    const start = role==='admin'?'admin-schools':requested;
     go(pages[start] ? start : 'dashboard');
     if (!window.__appHashBound) window.addEventListener('hashchange', () => {
       const k = location.hash.replace('#', '');
       if (k && pages[k] && k !== current) {
-        if (k !== 'dashboard' && sessionStorage.getItem('authed') !== '1') {
+        if (!Store.getSession()) {
           U.$('#app').style.display = 'none'; U.$('#loginScreen').style.display = 'flex';
         } else go(k);
       }
@@ -117,13 +117,13 @@ window.App = (function () {
   }
 
   // ---------------- nav ----------------
-  function renderNav(publicOnly = false) {
+  function renderNav(role = 'school') {
     const nav = U.$('#nav');
     nav.innerHTML = '';
-    if (publicOnly) {
-      nav.appendChild(U.el('<div class="nav-group">หน้าสาธารณะ</div>'));
-      const item = U.el('<div class="nav-item active" data-key="dashboard"><span class="ic">🏠</span><span>แดชบอร์ด</span></div>');
-      item.onclick = () => go('dashboard'); nav.appendChild(item); return;
+    if (role==='admin') {
+      nav.appendChild(U.el('<div class="nav-group">ผู้ดูแลระบบ</div>'));
+      const item=U.el('<div class="nav-item active" data-key="admin-schools"><span class="ic">🏫</span><span>จัดการโรงเรียน</span></div>');
+      item.onclick=()=>go('admin-schools');nav.appendChild(item);return;
     }
     NAV.forEach(n => {
       if (n.group) { nav.appendChild(U.el(`<div class="nav-group">${U.esc(n.group)}</div>`)); return; }
@@ -135,7 +135,8 @@ window.App = (function () {
 
   function go(key) {
     if (!pages[key]) return;
-    if (key !== 'dashboard' && sessionStorage.getItem('authed') !== '1') {
+    const session=Store.getSession();
+    if (!session || (session.role==='admin' && key!=='admin-schools') || (session.role==='school' && key==='admin-schools')) {
       U.$('#app').style.display = 'none'; U.$('#loginScreen').style.display = 'flex'; return;
     }
     current = key;
@@ -329,6 +330,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }, true);
   U.$('#reloadBtn').addEventListener('click', () => App.reload(false));
-  U.$('#logoutBtn').addEventListener('click', () => { sessionStorage.removeItem('authed'); location.reload(); });
+  U.$('#logoutBtn').addEventListener('click', async () => { await Store.logout(); location.hash=''; location.reload(); });
   App.boot();
 });
