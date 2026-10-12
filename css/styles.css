@@ -419,3 +419,8 @@ table.reg tr.sum td{font-weight:700;background:#fafafa}
 @media print{
   .portrait @page{size:A4 portrait}
 }
+
+/* ใช้ขนาดตัวอักษรเดียวกันในตารางของเอกสารพิมพ์และ PDF */
+@media print{
+  table,table *{font-size:14pt!important}
+}
