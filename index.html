@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=2.0.0">
+  <link rel="stylesheet" href="css/styles.css?v=2.0.3">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💰</text></svg>">
 </head>
 <body>
@@ -23,6 +23,44 @@
       <input id="codeInput" type="password" inputmode="numeric" placeholder="••••••" autocomplete="off">
       <div class="login-err" id="loginErr"></div>
       <button class="btn primary" id="loginBtn" style="width:100%;justify-content:center">เข้าสู่ระบบ</button>
+      <button class="login-link" id="forgotBtn" type="button">ลืมรหัสผ่าน?</button>
+    </div>
+  </div>
+
+  <div id="forgotScreen" class="account-screen" aria-hidden="true">
+    <div class="login-card">
+      <h2>ขอตั้งรหัสผ่านใหม่</h2>
+      <p>ระบบจะส่งลิงก์ไปยังอีเมลประจำบัญชี</p>
+      <select id="forgotMode" aria-label="ประเภทบัญชี"><option value="school">โรงเรียน</option><option value="admin">Admin หลัก</option></select>
+      <input id="forgotSchoolCode" type="text" placeholder="รหัสโรงเรียน" autocomplete="username">
+      <input id="forgotEmail" type="email" placeholder="อีเมลประจำบัญชี" autocomplete="email">
+      <div class="login-err" id="forgotErr"></div>
+      <button class="btn primary" id="sendResetBtn" style="width:100%;justify-content:center">ส่งลิงก์ตั้งรหัสผ่าน</button>
+      <button class="login-link" id="forgotCancelBtn" type="button">กลับไปหน้าเข้าสู่ระบบ</button>
+    </div>
+  </div>
+
+  <div id="resetScreen" class="account-screen" aria-hidden="true">
+    <div class="login-card">
+      <h2>ตั้งรหัสผ่านใหม่</h2>
+      <p>รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัวอักษร</p>
+      <input id="newPassword" type="password" maxlength="128" placeholder="รหัสผ่านใหม่" autocomplete="new-password">
+      <input id="confirmPassword" type="password" maxlength="128" placeholder="ยืนยันรหัสผ่านใหม่" autocomplete="new-password">
+      <div class="login-err" id="resetErr"></div>
+      <button class="btn primary" id="confirmResetBtn" style="width:100%;justify-content:center">บันทึกรหัสผ่านใหม่</button>
+    </div>
+  </div>
+
+  <!-- ============ เลือกปีงบประมาณก่อนเข้าแอป ============ -->
+  <div id="fyScreen" aria-hidden="true">
+    <div class="login-card fiscal-year-card">
+      <div class="fy-icon" aria-hidden="true">📅</div>
+      <h2>เลือกปีงบประมาณ</h2>
+      <p>ข้อมูลและรายงานจะแสดงตามปีงบประมาณที่เลือก</p>
+      <label for="entryFY">ปีงบประมาณ (พ.ศ.)</label>
+      <select id="entryFY" aria-label="เลือกปีงบประมาณ"></select>
+      <button class="btn primary" id="enterFYBtn" style="width:100%;justify-content:center">เข้าสู่หน้าหลัก</button>
+      <button class="fy-logout" id="fyLogoutBtn" type="button">ออกจากระบบ</button>
     </div>
   </div>
 
@@ -92,20 +130,20 @@
   <!-- ============ โค้ดของแอป ============ -->
   <script src="config.js?v=2.0.0"></script>
   <script src="js/util.js?v=1.0.15"></script>
-  <script src="js/store.js?v=2.0.0"></script>
+  <script src="js/store.js?v=2.0.4"></script>
   <script src="js/export.js?v=1.0.2"></script>
-  <script src="js/app.js?v=2.0.0"></script>
-  <script src="js/pages/settings.js?v=1.0.2"></script>
-  <script src="js/pages/admin-schools.js?v=2.0.0"></script>
+  <script src="js/app.js?v=2.0.2"></script>
+  <script src="js/pages/settings.js?v=1.0.6"></script>
+  <script src="js/pages/admin-schools.js?v=2.0.1"></script>
   <script src="js/pages/dashboard.js?v=1.0.2"></script>
-  <script src="js/pages/daily.js?v=1.0.14"></script>
+  <script src="js/pages/daily.js?v=1.0.15"></script>
   <script src="js/pages/reg-subsidy.js?v=1.0.2"></script>
   <script src="js/pages/reg-receipts.js?v=1.0.23"></script>
   <script src="js/pages/reg-vouchers.js?v=1.0.21"></script>
   <script src="js/pages/reg-orders.js?v=1.0.20"></script>
   <script src="js/pages/reg-offbudget.js?v=1.0.14"></script>
-  <script src="js/pages/reg-utility.js?v=1.0.2"></script>
-  <script src="js/pages/report-daily-balance.js?v=1.0.11"></script>
+  <script src="js/pages/reg-utility.js?v=1.0.3"></script>
+  <script src="js/pages/report-daily-balance.js?v=1.0.12"></script>
   <script src="js/pages/report-projects.js?v=1.0.2"></script>
 </body>
 </html>

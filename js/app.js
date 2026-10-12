@@ -70,7 +70,31 @@ window.App = (function () {
     U.$('#loginBtn').addEventListener('click', tryLogin);
     inp.addEventListener('keydown', e => { if (e.key === 'Enter') tryLogin(); });
     mode.onchange = () => { schoolInp.style.display = mode.value === 'admin' ? 'none' : ''; err.textContent=''; };
+    const forgotScreen=U.$('#forgotScreen'),forgotMode=U.$('#forgotMode'),forgotCode=U.$('#forgotSchoolCode'),forgotEmail=U.$('#forgotEmail'),forgotErr=U.$('#forgotErr');
+    const syncForgotMode=()=>{forgotCode.style.display=forgotMode.value==='admin'?'none':'';forgotErr.textContent='';forgotErr.classList.remove('ok');};
+    forgotMode.onchange=syncForgotMode;
+    U.$('#forgotBtn').onclick=()=>{forgotMode.value=mode.value;forgotCode.value=schoolInp.value.trim();forgotEmail.value='';syncForgotMode();U.$('#loginScreen').style.display='none';forgotScreen.style.display='flex';forgotScreen.setAttribute('aria-hidden','false');forgotEmail.focus();};
+    U.$('#forgotCancelBtn').onclick=()=>{forgotScreen.style.display='none';forgotScreen.setAttribute('aria-hidden','true');U.$('#loginScreen').style.display='flex';};
+    U.$('#sendResetBtn').onclick=async()=>{
+      const email=forgotEmail.value.trim(),btn=U.$('#sendResetBtn');forgotErr.textContent='';forgotErr.classList.remove('ok');
+      if(forgotMode.value==='school'&&!forgotCode.value.trim()){forgotErr.textContent='กรุณากรอกรหัสโรงเรียน';return;}
+      if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){forgotErr.textContent='กรุณากรอกอีเมลให้ถูกต้อง';return;}
+      btn.disabled=true;btn.textContent='กำลังส่ง...';
+      try{const result=await Store.requestPasswordReset(forgotMode.value,forgotCode.value.trim(),email);forgotErr.classList.add('ok');forgotErr.textContent=result.message||'ตรวจสอบอีเมลเพื่อเปิดลิงก์ตั้งรหัสผ่าน';}
+      catch(e){forgotErr.classList.remove('ok');forgotErr.textContent=e.message||'ส่งอีเมลไม่สำเร็จ';}
+      finally{btn.disabled=false;btn.textContent='ส่งลิงก์ตั้งรหัสผ่าน';}
+    };
+    const resetToken=new URLSearchParams(location.search).get('reset_token');
+    if(resetToken){
+      const resetScreen=U.$('#resetScreen'),resetErr=U.$('#resetErr');resetScreen.style.display='flex';resetScreen.setAttribute('aria-hidden','false');
+      U.$('#confirmResetBtn').onclick=async()=>{const password=U.$('#newPassword').value,confirm=U.$('#confirmPassword').value,btn=U.$('#confirmResetBtn');resetErr.textContent='';
+        if(password.length<6){resetErr.textContent='รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร';return;}if(password!==confirm){resetErr.textContent='ยืนยันรหัสผ่านไม่ตรงกัน';return;}
+        btn.disabled=true;btn.textContent='กำลังบันทึก...';try{await Store.confirmPasswordReset(resetToken,password);history.replaceState(null,'',location.pathname+location.hash);resetScreen.style.display='none';U.$('#loginScreen').style.display='flex';err.textContent='ตั้งรหัสผ่านใหม่แล้ว กรุณาเข้าสู่ระบบ';err.classList.add('ok');}
+        catch(e){resetErr.textContent=e.message||'ตั้งรหัสผ่านไม่สำเร็จ';}finally{btn.disabled=false;btn.textContent='บันทึกรหัสผ่านใหม่';}
+      };return;
+    }
     async function tryLogin() {
+      err.classList.remove('ok');
       if(mode.value==='school' && !schoolInp.value.trim()){err.textContent='กรุณากรอกรหัสโรงเรียน';schoolInp.focus();return;}
       if(!inp.value){err.textContent='กรุณากรอกรหัสผ่าน';inp.focus();return;}
       const btn=U.$('#loginBtn'); btn.disabled=true; btn.textContent='กำลังเข้าสู่ระบบ...'; err.textContent='';
@@ -82,12 +106,43 @@ window.App = (function () {
     else U.$('#loginScreen').style.display = 'flex';
   }
 
+  function chooseFiscalYear() {
+    const screen = U.$('#fyScreen');
+    const select = U.$('#entryFY');
+    const enter = U.$('#enterFYBtn');
+    const logout = U.$('#fyLogoutBtn');
+    select.innerHTML = '';
+    Store.fyList().forEach(fy => {
+      const option = U.el(`<option value="${fy}">ปีงบประมาณ ${fy}</option>`);
+      option.selected = fy === Store.getFY();
+      select.appendChild(option);
+    });
+    screen.style.display = 'flex';
+    screen.setAttribute('aria-hidden', 'false');
+    select.focus();
+    return new Promise(resolve => {
+      enter.onclick = () => {
+        Store.setFY(select.value);
+        screen.style.display = 'none';
+        screen.setAttribute('aria-hidden', 'true');
+        resolve();
+      };
+      select.onkeydown = e => { if (e.key === 'Enter') enter.click(); };
+      logout.onclick = async () => { await Store.logout(); location.hash = ''; location.reload(); };
+    });
+  }
+
   async function enterApp(role = 'school') {
     U.$('#loginScreen').style.display = 'none';
-    U.$('#app').style.display = 'block';
+    U.$('#fyScreen').style.display = 'none';
+    U.$('#app').style.display = 'none';
     U.$('#app').classList.remove('public-view');
     renderNav(role);
-    if(role==='school') await reload(true);
+    if(role==='school') {
+      await reload(true);
+      await chooseFiscalYear();
+    }
+    U.$('#app').style.display = 'block';
     // ไปหน้าเริ่มต้น
     const requested = location.hash.replace('#', '') || (role==='admin'?'admin-schools':'dashboard');
     const start = role==='admin'?'admin-schools':requested;

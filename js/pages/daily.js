@@ -131,7 +131,7 @@
     const D = Store.data();
     const isNew = !t;
     const v = Object.assign({
-      txn_date: U.todayISO(), doc_type: 'บจ', doc_no: Store.nextDocNo(), description: '',
+      txn_date: Store.defaultDateForFY(), doc_type: 'บจ', doc_no: Store.nextDocNo(), description: '',
       amount_in: 0, amount_out: 0, account_id: '', bal_type: 'bank', round_no: '',
       pay_debtor: 0, pay_voucher: 0, po_no: '', hire_no: '', memo_no: '', project: '',
       level: '', travel: false, clear_status: '', teacher_id: '', notes: '',
@@ -204,7 +204,7 @@
 
     // เลือกโครงการและกรองกิจกรรมตามโครงการ
     const projectSel = body.querySelector('#f_proj');
-    D.projects.filter(p => p.active !== false).forEach(p => projectSel.appendChild(U.el(`<option value="${U.esc(p.id)}" ${p.id === v.project_id ? 'selected' : ''}>${U.esc(p.name)}</option>`)));
+    Store.projectsFY().filter(p => p.active !== false).forEach(p => projectSel.appendChild(U.el(`<option value="${U.esc(p.id)}" ${p.id === v.project_id ? 'selected' : ''}>${U.esc(p.name)}</option>`)));
     const activitySel = body.querySelector('#f_activity');
     const updateActivities = () => {
       const p = Store.projectById(projectSel.value);
@@ -448,7 +448,7 @@
     const accountMap = new Map(), teacherMap = new Map(), projectMap = new Map();
     D.accounts.forEach(x => { accountMap.set(norm(x.name), x); if (x.code) accountMap.set(norm(x.code), x); });
     D.teachers.forEach(x => teacherMap.set(norm(x.name), x));
-    D.projects.forEach(x => projectMap.set(norm(x.name), x));
+    Store.projectsFY().forEach(x => projectMap.set(norm(x.name), x));
     const existing = new Set(D.transactions.map(transactionKey)), pending = new Set();
     const rows = []; let invalid = 0, duplicate = 0;
     data.slice(1).forEach(source => {

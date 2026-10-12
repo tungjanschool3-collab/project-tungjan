@@ -80,6 +80,26 @@
 
 ---
 
+## ตั้งค่าระบบ “ลืมรหัสผ่าน”
+
+ระบบนี้ส่งอีเมลผ่าน Resend และเก็บกุญแจส่งอีเมลไว้ใน Supabase Edge Function เท่านั้น ห้ามใส่กุญแจใน `config.js`
+
+1. สร้าง API key และยืนยันโดเมนผู้ส่งที่ Resend
+2. ใช้ Supabase CLI เชื่อมโปรเจกต์ แล้วนำ migration และฟังก์ชันขึ้นระบบ:
+   ```sh
+   supabase link --project-ref YOUR_PROJECT_REF
+   supabase db push
+   supabase secrets set RESEND_API_KEY=re_xxx
+   supabase secrets set RESET_FROM_EMAIL="ระบบคุมเงินนอกงบประมาณ <noreply@your-domain.com>"
+   supabase secrets set PUBLIC_SITE_URL=https://project-tungjan.vercel.app/
+   supabase functions deploy password-reset
+   ```
+3. เข้าระบบ Admin และโรงเรียนเพื่อบันทึกอีเมลประจำบัญชีก่อนทดลองกด “ลืมรหัสผ่าน?”
+
+ไฟล์ `supabase/functions/.env.example` เป็นเพียงตัวอย่าง ห้ามบันทึก API key จริงลง Git
+
+---
+
 ## หมายเหตุด้านความปลอดภัย (สำคัญ)
 - โปรแกรมนี้ป้องกันการเข้าถึงด้วย **รหัสผ่านหน้าเว็บ** (044357246) ซึ่งเหมาะกับการใช้งานภายในโรงเรียน
 - `anon key` ที่ใส่ใน `config.js` จะถูกฝังในหน้าเว็บ = เปิดเผยได้ ผู้ที่รู้ทั้ง URL และ key อาจเข้าถึงข้อมูลได้

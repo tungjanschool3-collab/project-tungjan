@@ -51,13 +51,14 @@
   function rowsAt(date) {
     const D = Store.data();
     return D.accounts.filter(a => a.active !== false).map(a => {
-      const useOpening = !a.opening_date || a.opening_date <= date;
+      const openingFY = a.opening_date ? Store.fyOfDate(a.opening_date) : Store.START_FY;
+      const useOpening = openingFY === Store.getFY() && (!a.opening_date || a.opening_date <= date);
       const bal = {
         cash: useOpening ? Number(a.opening_cash || 0) : 0,
         bank: useOpening ? Number(a.opening_bank || 0) : 0,
         gov: useOpening ? Number(a.opening_govdeposit || 0) : 0,
       };
-      D.transactions.filter(t => t.account_id === a.id && t.txn_date <= date &&
+      Store.txnsFY().filter(t => t.account_id === a.id && t.txn_date <= date &&
         (!a.opening_date || t.txn_date >= a.opening_date)).forEach(t => {
         const key = t.bal_type === 'cash' ? 'cash' : t.bal_type === 'govdeposit' ? 'gov' : 'bank';
         bal[key] += Number(t.amount_in || 0) - Number(t.amount_out || 0);
@@ -240,7 +241,10 @@
   }
 
   function render(c) {
-    const toolbar = U.el(`<div class="toolbar no-print"><div class="field"><label>วันที่รายงาน</label><input type="date" id="balanceDate" value="${reportDate}"></div>
+    if (Store.fyOfDate(reportDate) !== Store.getFY()) reportDate = Store.defaultDateForFY();
+    const endYear = Store.getFY() - 543;
+    const fyStart = `${endYear - 1}-10-01`, fyEnd = `${endYear}-09-30`;
+    const toolbar = U.el(`<div class="toolbar no-print"><div class="field"><label>วันที่รายงาน</label><input type="date" id="balanceDate" min="${fyStart}" max="${fyEnd}" value="${reportDate}"></div>
       <div class="field daily-note-field"><label>หมายเหตุ (พิมพ์แยกบรรทัดได้)</label><textarea id="balanceNote" rows="3" placeholder="เช่น ไม่มีการรับจ่ายเงิน&#10;15 ส.ค. 69&#10;ถึง&#10;27 ส.ค. 69&#10;(ชื่อผู้รับผิดชอบ)"></textarea></div>
       <button class="btn ghost" id="refreshBalance">🔄 คำนวณใหม่</button><div class="spacer"></div>
       <button class="btn print" id="printBalance">🖨️ พิมพ์ A4</button><button class="btn primary" id="pdfBalance">⬇️ ดาวน์โหลด PDF</button></div>`);
@@ -250,7 +254,15 @@
       card.innerHTML = ''; card.appendChild(reportNode(reportDate));
       mapping.innerHTML = ''; mapping.appendChild(mappingPanel(reportDate, rebuild));
     };
-    toolbar.querySelector('#balanceDate').onchange = e => { reportDate = e.target.value || U.todayISO(); rebuild(); };
+    toolbar.querySelector('#balanceDate').onchange = e => {
+      const next = e.target.value || Store.defaultDateForFY();
+      if (Store.fyOfDate(next) !== Store.getFY()) {
+        U.toast(`กรุณาเลือกวันที่ในปีงบประมาณ ${Store.getFY()}`, 'err');
+        e.target.value = reportDate;
+        return;
+      }
+      reportDate = next; rebuild();
+    };
     toolbar.querySelector('#balanceNote').oninput = e => { reportNote = e.target.value; rebuild(); };
     toolbar.querySelector('#refreshBalance').onclick = async () => { await App.reload(true); rebuild(); U.toast('ซิงค์และคำนวณยอดใหม่แล้ว'); };
     toolbar.querySelector('#printBalance').onclick = () => window.print();

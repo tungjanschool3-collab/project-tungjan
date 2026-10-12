@@ -21,8 +21,10 @@ a{color:var(--brand);text-decoration:none}
 h1,h2,h3,h4{margin:0;font-weight:700}
 
 /* ---------- Login ---------- */
-#loginScreen{position:fixed;inset:0;display:none;align-items:center;justify-content:center;
+#loginScreen,.account-screen{position:fixed;inset:0;display:none;align-items:center;justify-content:center;
   background:radial-gradient(1200px 600px at 20% -10%,#5b73e6 0%,#3b5bdb 45%,#22357f 100%);z-index:50}
+#fyScreen{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:18px;
+  background:radial-gradient(1200px 600px at 20% -10%,#5b73e6 0%,#3b5bdb 45%,#22357f 100%);z-index:49}
 .login-card{background:#fff;width:min(380px,92vw);border-radius:20px;padding:34px 30px;box-shadow:0 30px 80px rgba(0,0,0,.35);text-align:center}
 .login-card .logo{width:84px;height:84px;border-radius:16px;background:#fff;display:grid;place-items:center;margin:0 auto 14px;font-size:30px;overflow:hidden}
 .login-card .logo img{width:100%;height:100%;object-fit:contain}
@@ -32,6 +34,16 @@ h1,h2,h3,h4{margin:0;font-weight:700}
 .login-card #codeInput{letter-spacing:6px;font-size:22px}
 .login-card input:focus,.login-card select:focus{outline:none;border-color:var(--brand)}
 .login-err{color:var(--danger);min-height:20px;font-size:13px;margin-bottom:6px}
+.login-err.ok{color:var(--teal)}
+.login-link{border:0;background:transparent;color:var(--brand);font:inherit;font-weight:600;cursor:pointer;margin-top:14px;padding:6px}
+.login-link:hover{text-decoration:underline}
+.account-screen{z-index:60;background:linear-gradient(145deg,#111a3a,#23549a);padding:18px}
+.fiscal-year-card label{display:block;margin-bottom:6px;color:var(--muted);font-size:13px;font-weight:700}
+.fiscal-year-card select{width:100%;margin-bottom:16px;padding:12px;border:2px solid var(--line);border-radius:12px;background:#fff;text-align:center;font-weight:700}
+.fiscal-year-card select:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft)}
+.fy-icon{display:grid;place-items:center;width:70px;height:70px;margin:0 auto 14px;border-radius:20px;background:var(--brand-soft);font-size:34px}
+.fy-logout{margin-top:14px;border:0;background:transparent;color:var(--muted);cursor:pointer;text-decoration:underline}
+.fy-logout:hover{color:var(--danger)}
 
 /* ---------- App layout ---------- */
 #app{display:none;min-height:100vh}
@@ -91,6 +103,16 @@ input[readonly]{background:#f6f8fc;color:var(--muted)}
 .btn.excel{background:var(--teal-soft);color:var(--teal);border:1.5px solid #a5e0cf}
 .btn.print{background:var(--amber-soft);color:var(--rose);border:1.5px solid #f7cf9b}
 .btn-row{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+.fy-copy-options{display:flex;gap:18px;flex-wrap:wrap;margin:14px 0 8px;padding:12px 14px;border-radius:12px;background:#f6f8fc}
+.fy-copy-options label{display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600}
+.fy-copy-options input{width:18px;height:18px;accent-color:var(--brand)}
+.fy-copy-preview{margin-top:14px;padding:14px;border:1px solid #dce3f2;border-radius:13px;background:#fbfcff}
+.fy-copy-preview>b{display:block;margin-bottom:9px;color:var(--brand-d)}
+.fy-preview-grid{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:8px}
+.fy-preview-grid span{padding:9px 10px;border-radius:10px;background:#f0f3fa;color:var(--muted);font-size:11.5px}
+.fy-preview-grid strong{display:block;margin-top:3px;color:var(--ink);font-size:13px}
+.fy-preview-warning{margin-top:10px;padding:8px 10px;border-radius:9px;background:var(--amber-soft);color:#9a5a00;font-size:12px}
+@media(max-width:760px){.fy-preview-grid{grid-template-columns:1fr 1fr}}
 
 /* ---------- Tables ---------- */
 .table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:#fff}

@@ -87,7 +87,7 @@
         { name: 'note', label: 'หมายเหตุ', col: 1 },
       ],
       values: b ? Object.assign({}, b, { bill_month: (b.bill_month || '').slice(0, 7) })
-        : { bill_month: U.ymOf(U.todayISO()), type: 'electric', units: 0, amount: 0 },
+        : { bill_month: Store.defaultMonthForFY(), type: 'electric', units: 0, amount: 0 },
       onSubmit: async (v) => {
         v.bill_month = (v.bill_month || '').slice(0, 7);
         if (!v.bill_month) { U.toast('กรุณาเลือกเดือน', 'err'); throw new Error('no month'); }

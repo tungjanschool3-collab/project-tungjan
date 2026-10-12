@@ -38,6 +38,18 @@
   // ---------------- โรงเรียน ----------------
   function renderSchool(c, D) {
     const s = D.school || {};
+    const emailCard = U.el(`<div class="card"><h3>อีเมลประจำบัญชีโรงเรียน</h3>
+      <div class="sub">ใช้สำหรับยืนยันตัวตนและกู้คืนรหัสผ่านในขั้นถัดไป</div>
+      <div class="btn-row"><div class="field" style="flex:1;min-width:240px"><label>อีเมล</label>
+        <input id="schoolAccountEmail" type="email" autocomplete="email" value="${U.esc(Store.getSession()?.email || '')}" placeholder="school@example.com"></div>
+        <button class="btn primary" id="saveSchoolEmail">💾 บันทึกอีเมล</button></div></div>`);
+    emailCard.querySelector('#saveSchoolEmail').onclick = async () => {
+      const email = emailCard.querySelector('#schoolAccountEmail').value.trim();
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { U.toast('รูปแบบอีเมลไม่ถูกต้อง', 'err'); return; }
+      try { await Store.setAccountEmail(email); U.toast('บันทึกอีเมลแล้ว'); }
+      catch (e) { U.toast('บันทึกอีเมลไม่สำเร็จ: ' + (e.message || e), 'err'); }
+    };
+    c.appendChild(emailCard);
     const card = U.el(`<div class="card">
       <h3>ข้อมูลโรงเรียน</h3>
       <div class="sub">ใช้แสดงหัวกระดาษของทุกทะเบียนคุมและช่องลงชื่อท้ายกระดาษ</div>
@@ -441,17 +453,79 @@
     };
     c.appendChild(startCard);
 
+    const suggestedFY = Math.min(2700, Math.max(cur + 1, (fys[0] || cur) + 1));
+    const copyCard = U.el(`<div class="card">
+      <h3>สร้างปีงบประมาณใหม่จากปีเดิม</h3>
+      <div class="sub">ข้อมูลโรงเรียน ครู ตำแหน่ง และโครงสร้างบัญชีใช้ร่วมกันอยู่แล้ว ระบบจะไม่คัดลอกรายการรับ–จ่ายเดิม</div>
+      <div class="grid c2">
+        <div class="field"><label>ปีต้นแบบ</label><select id="sourceFY"></select></div>
+        <div class="field"><label>ปีงบประมาณใหม่ (พ.ศ.)</label><input id="targetFY" type="number" min="2500" max="2700" value="${suggestedFY}"></div>
+      </div>
+      <div class="fy-copy-options">
+        <label><input id="copyProjects" type="checkbox" checked> คัดลอกโครงการและกิจกรรมย่อย</label>
+        <label><input id="copyEvents" type="checkbox"> คัดลอกกิจกรรมในปฏิทินและเลื่อนปีให้ตรงกับปีใหม่</label>
+        <label><input id="carryBalances" type="checkbox" checked> นำยอดคงเหลือปลายปีไปเป็นยอดยกมาต้นปีใหม่</label>
+      </div>
+      <div class="hint">ยอดยกมาจะบันทึกเป็นรายการวันที่ 1 ตุลาคมของปีใหม่ และมีเครื่องหมายป้องกันการสร้างซ้ำ</div>
+      <div class="fy-copy-preview" id="fyCopyPreview" aria-live="polite"></div>
+      <button class="btn primary" id="createFY" style="margin-top:14px">✨ สร้างปีงบประมาณใหม่</button>
+    </div>`);
+    const sourceSelect = copyCard.querySelector('#sourceFY');
+    fys.forEach(fy => sourceSelect.appendChild(U.el(`<option value="${fy}" ${fy === cur ? 'selected' : ''}>ปีงบประมาณ ${fy}</option>`)));
+    const updateCopyPreview = () => {
+      const sourceFY = Number(sourceSelect.value), targetFY = Number(copyCard.querySelector('#targetFY').value || 0);
+      const projects = Store.projectsFY(sourceFY);
+      const projectIds = new Set(projects.map(p => p.id));
+      const activities = (Store.data().projectActivities || []).filter(a => projectIds.has(a.project_id));
+      const events = Store.eventsFY(sourceFY);
+      const carryRows = Store.accountBalancesAtFYEnd(sourceFY)
+        .reduce((n, x) => n + Object.values(x.balance).filter(amount => Number(amount) !== 0).length, 0);
+      const existing = Store.txnsFY(targetFY).length + Store.projectsFY(targetFY).length + Store.eventsFY(targetFY).length;
+      copyCard.querySelector('#fyCopyPreview').innerHTML = `<b>ตัวอย่างก่อนสร้างปี ${targetFY || '—'}</b>
+        <div class="fy-preview-grid">
+          <span>ใช้ร่วมอัตโนมัติ<strong>${Store.data().teachers.length} ครู · ${Store.data().accounts.length} บัญชี</strong></span>
+          <span>โครงการ/กิจกรรม<strong>${copyCard.querySelector('#copyProjects').checked ? `${projects.length} / ${activities.length}` : 'ไม่คัดลอก'}</strong></span>
+          <span>กิจกรรมปฏิทิน<strong>${copyCard.querySelector('#copyEvents').checked ? events.length : 'ไม่คัดลอก'}</strong></span>
+          <span>ยอดยกมา<strong>${copyCard.querySelector('#carryBalances').checked ? `${carryRows} รายการ` : 'ไม่นำไป'}</strong></span>
+        </div>${existing ? `<div class="fy-preview-warning">⚠️ ปี ${targetFY} มีข้อมูลอยู่แล้ว ${existing} รายการ ระบบจะข้ามข้อมูลที่ซ้ำ</div>` : ''}`;
+    };
+    ['#sourceFY','#targetFY','#copyProjects','#copyEvents','#carryBalances'].forEach(id => {
+      copyCard.querySelector(id).addEventListener('change', updateCopyPreview);
+      copyCard.querySelector(id).addEventListener('input', updateCopyPreview);
+    });
+    updateCopyPreview();
+    copyCard.querySelector('#createFY').onclick = () => {
+      const sourceFY = Number(sourceSelect.value), targetFY = Number(copyCard.querySelector('#targetFY').value || 0);
+      const copyProjects = copyCard.querySelector('#copyProjects').checked;
+      const copyEvents = copyCard.querySelector('#copyEvents').checked;
+      const carryBalances = copyCard.querySelector('#carryBalances').checked;
+      if (targetFY < 2500 || targetFY > 2700) { U.toast('กรุณาใส่ปีงบประมาณใหม่ให้ถูกต้อง', 'err'); return; }
+      if (targetFY === sourceFY) { U.toast('ปีใหม่ต้องไม่ซ้ำกับปีต้นแบบ', 'err'); return; }
+      const existing = Store.txnsFY(targetFY).length + Store.projectsFY(targetFY).length;
+      const warning = existing ? `ปีงบ ${targetFY} มีข้อมูลอยู่แล้ว ระบบจะเพิ่มเฉพาะรายการที่ยังไม่มี` : `สร้างปีงบ ${targetFY} จากปี ${sourceFY}`;
+      App.confirmDialog(`${warning} — ยืนยันดำเนินการ?`, async () => {
+        try {
+          const result = await createFiscalYear(sourceFY, targetFY, { copyProjects, copyEvents, carryBalances });
+          U.toast(`สร้างปีงบ ${targetFY} แล้ว: ${result.projects} โครงการ, ${result.activities} กิจกรรมย่อย, ${result.events} ปฏิทิน, ${result.carryRows} ยอดยกมา`);
+          App.go('settings');
+        } catch (e) { U.toast('สร้างปีงบไม่สำเร็จ: ' + (e.message || e), 'err'); }
+      }, { danger: false, yes: 'สร้างปีงบประมาณ' });
+    };
+    c.appendChild(copyCard);
+
     const card = U.el(`<div class="card">
       <h3>ข้อมูลแยกตามปีงบ</h3>
       <div class="sub">ปีที่เกิน ${KEEP} ปีล่าสุดจะขึ้น “เก่า (ลบได้)” — ลบเพื่อล้างข้อมูลเก่าออก</div>
       <div class="table-wrap"><table class="data">
-      <thead><tr><th>ปีงบ (พ.ศ.)</th><th class="num">รายการรับ-จ่าย</th><th class="num">โครงการ</th><th>สถานะ</th><th style="width:130px"></th></tr></thead>
+      <thead><tr><th>ปีงบ (พ.ศ.)</th><th class="num">รายการรับ-จ่าย</th><th class="num">โครงการ</th><th class="num">บิล</th><th class="num">กิจกรรม</th><th>สถานะ</th><th style="width:130px"></th></tr></thead>
       <tbody id="fyBody"></tbody></table></div>
     </div>`);
     const tb = card.querySelector('#fyBody');
     fys.forEach((fy, i) => {
       const txnN = Store.txnsFY(fy).length;
       const projN = Store.projectsFY(fy).length;
+      const billN = Store.utilitiesFY(fy).length;
+      const eventN = Store.eventsFY(fy).length;
       const isCur = fy === cur;
       const isOld = i >= KEEP;
       const status = isCur ? '<span class="pill" style="background:var(--brand-soft);color:var(--brand-d)">กำลังใช้งาน</span>'
@@ -461,18 +535,94 @@
         <td><b>${fy}</b></td>
         <td class="num">${txnN}</td>
         <td class="num">${projN}</td>
+        <td class="num">${billN}</td>
+        <td class="num">${eventN}</td>
         <td>${status}</td>
         <td><button class="btn danger sm delFY">🗑️ ลบปีนี้</button></td></tr>`);
-      tr.querySelector('.delFY').onclick = () => confirmDeleteFY(fy, txnN, projN);
+      tr.querySelector('.delFY').onclick = () => confirmDeleteFY(fy, txnN, projN, billN, eventN);
       tb.appendChild(tr);
     });
-    if (!fys.length) tb.appendChild(U.el('<tr><td colspan="5"><div class="empty">ยังไม่มีข้อมูล</div></td></tr>'));
+    if (!fys.length) tb.appendChild(U.el('<tr><td colspan="7"><div class="empty">ยังไม่มีข้อมูล</div></td></tr>'));
     c.appendChild(card);
   }
 
-  function confirmDeleteFY(fy, txnN, projN) {
+  async function createFiscalYear(sourceFY, targetFY, options) {
+    const previousFY = Store.getFY();
+    const sourceProjects = Store.projectsFY(sourceFY).map(project => ({
+      project,
+      activities: (Store.data().projectActivities || []).filter(a => a.project_id === project.id),
+    }));
+    const sourceEvents = options.copyEvents ? Store.eventsFY(sourceFY) : [];
+    const balances = options.carryBalances ? Store.accountBalancesAtFYEnd(sourceFY) : [];
+    let projectCount = 0, activityCount = 0, eventCount = 0, carryCount = 0;
+    Store.setFY(targetFY);
+    try {
+      const targetProjects = new Map(Store.projectsFY(targetFY).map(p => [String(p.name || '').trim().toLowerCase(), p]));
+      if (options.copyProjects) {
+        for (const item of sourceProjects) {
+          const key = String(item.project.name || '').trim().toLowerCase();
+          let target = targetProjects.get(key);
+          if (!target) {
+            target = await Store.insert('projects', {
+              name: item.project.name, fiscal_year: targetFY, budget: Number(item.project.budget || 0),
+              budget_adjust: Number(item.project.budget_adjust || 0), level: item.project.level || null,
+              note: item.project.note || null, sort: Number(item.project.sort || 0), active: item.project.active !== false,
+            });
+            targetProjects.set(key, target); projectCount++;
+          }
+          const existingActivities = new Set((Store.data().projectActivities || [])
+            .filter(a => a.project_id === target.id).map(a => String(a.name || '').trim().toLowerCase()));
+          const activityRows = item.activities.filter(a => !existingActivities.has(String(a.name || '').trim().toLowerCase())).map(a => ({
+            project_id: target.id, name: a.name, budget: Number(a.budget || 0), level: a.level || null,
+            responsible: a.responsible || null, sort: Number(a.sort || 0),
+          }));
+          if (activityRows.length) { await Store.insertMany('project_activities', activityRows); activityCount += activityRows.length; }
+        }
+      }
+      if (options.carryBalances) {
+        const existingMarkers = new Set(Store.txnsFY(targetFY).map(t => String(t.notes || '')).filter(n => n.startsWith('[FY_CARRY:')));
+        const startDate = `${targetFY - 543 - 1}-10-01`;
+        const labels = { cash: 'เงินสด', bank: 'เงินฝากธนาคาร', govdeposit: 'เงินฝากส่วนราชการผู้เบิก' };
+        const rows = [];
+        balances.forEach(({ account, balance }) => Object.entries(balance).forEach(([type, amount]) => {
+          const marker = `[FY_CARRY:${sourceFY}:${targetFY}:${account.id}:${type}]`;
+          if (!amount || existingMarkers.has(marker)) return;
+          rows.push({ txn_date: startDate, doc_type: null, doc_no: null,
+            description: `ยอดยกมาต้นปีงบประมาณ ${targetFY} (${labels[type]})`, account_id: account.id, bal_type: type,
+            amount_in: amount > 0 ? amount : 0, amount_out: amount < 0 ? Math.abs(amount) : 0,
+            notes: marker });
+        }));
+        if (rows.length) { await Store.insertMany('transactions', rows); carryCount = rows.length; }
+      }
+      if (options.copyEvents) {
+        const shift = targetFY - sourceFY;
+        const shiftedEvents = sourceEvents.map(event => ({
+          event_date: shiftYear(event.event_date, shift), title: event.title, detail: event.detail || null,
+        }));
+        const existingEvents = new Set(Store.eventsFY(targetFY).map(e => `${e.event_date}|${String(e.title || '').trim().toLowerCase()}`));
+        const eventRows = shiftedEvents.filter(e => !existingEvents.has(`${e.event_date}|${String(e.title || '').trim().toLowerCase()}`));
+        if (eventRows.length) { await Store.insertMany('calendar_events', eventRows); eventCount = eventRows.length; }
+      }
+      await Store.loadAll();
+      return { projects: projectCount, activities: activityCount, events: eventCount, carryRows: carryCount };
+    } catch (e) {
+      await Store.loadAll().catch(() => {});
+      Store.setFY(previousFY);
+      throw e;
+    }
+  }
+
+  function shiftYear(iso, years) {
+    const parts = String(iso || '').split('-').map(Number);
+    if (parts.length !== 3 || parts.some(Number.isNaN)) return iso;
+    const targetYear = parts[0] + years;
+    const lastDay = new Date(Date.UTC(targetYear, parts[1], 0)).getUTCDate();
+    return `${targetYear}-${String(parts[1]).padStart(2, '0')}-${String(Math.min(parts[2], lastDay)).padStart(2, '0')}`;
+  }
+
+  function confirmDeleteFY(fy, txnN, projN, billN, eventN) {
     App.confirmDialog(
-      `ลบข้อมูลปีงบ ${fy} ทั้งหมด? — จะลบรายการรับ-จ่าย ${txnN} รายการ และโครงการ ${projN} โครงการ (พร้อมกิจกรรมย่อย) อย่างถาวร กู้คืนไม่ได้`,
+      `ลบข้อมูลปีงบ ${fy} ทั้งหมด? — รายการรับ-จ่าย ${txnN}, โครงการ ${projN}, บิล ${billN} และกิจกรรมปฏิทิน ${eventN} รายการ จะถูกลบถาวร แต่ข้อมูลโรงเรียน ครู และบัญชียังคงอยู่`,
       async () => {
         try {
           await Store.deleteFY(fy);
@@ -490,13 +640,14 @@
 
   // ---------------- ปฏิทิน ----------------
   function renderCalendar(c, D) {
+    const events = Store.eventsFY();
     const card = U.el(`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center">
-      <div><h3>ปฏิทินกิจกรรม</h3><div class="sub">บันทึกวันสำคัญ เช่น 2 ส.ค. 69</div></div>
+      <div><h3>ปฏิทินกิจกรรม ปีงบประมาณ ${Store.getFY()}</h3><div class="sub">แสดงเฉพาะกิจกรรมของปีงบประมาณที่เลือก</div></div>
       <button class="btn primary sm" id="addEv">+ เพิ่มกิจกรรม</button></div>
       <div class="table-wrap"><table class="data"><thead><tr><th style="width:150px">วันที่</th><th>เรื่อง</th><th>รายละเอียด</th><th style="width:90px"></th></tr></thead><tbody id="evBody"></tbody></table></div></div>`);
     const b = card.querySelector('#evBody');
-    if (!D.events.length) b.appendChild(U.el('<tr><td colspan="4"><div class="empty">ยังไม่มีกิจกรรม</div></td></tr>'));
-    D.events.forEach(ev => {
+    if (!events.length) b.appendChild(U.el('<tr><td colspan="4"><div class="empty">ยังไม่มีกิจกรรมในปีงบประมาณนี้</div></td></tr>'));
+    events.forEach(ev => {
       const tr = U.el(`<tr><td><b>${U.esc(U.thaiDate(ev.event_date))}</b></td><td>${U.esc(ev.title)}</td><td>${U.esc(ev.detail || '')}</td>
         <td><div class="row-actions"><button class="icon-btn">✏️</button><button class="icon-btn del">🗑️</button></div></td></tr>`);
       tr.querySelectorAll('button')[0].onclick = () => editEvent(ev);
@@ -514,7 +665,7 @@
         { name: 'title', label: 'เรื่อง', required: true },
         { name: 'detail', label: 'รายละเอียด', type: 'textarea', col: 1 },
       ],
-      values: ev || { event_date: U.todayISO() },
+      values: ev || { event_date: Store.defaultDateForFY() },
       onSubmit: async (v) => {
         if (ev) await Store.update('calendar_events', ev.id, v); else await Store.insert('calendar_events', v);
         U.toast('บันทึกกิจกรรมแล้ว'); await refresh();
